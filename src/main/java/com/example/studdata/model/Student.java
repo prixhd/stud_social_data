@@ -1,44 +1,72 @@
 package com.example.studdata.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "students")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Student {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "first_name", nullable = false, length = 50)
     private String firstName;
+
+    @Column(name = "last_name", nullable = false, length = 50)
     private String lastName;
+
+    @Column(name = "middle_name", length = 50)
     private String middleName;
+
+    @Column(name = "course", nullable = false)
     private int course;
 
-    @ManyToOne
-    @JoinColumn(name = "faculty_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "faculty_id", nullable = false)
     private Faculty faculty;
 
-    @ManyToOne
-    @JoinColumn(name = "study_form_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "study_form_id", nullable = false)
     private StudyForm studyForm;
 
-    @ManyToOne
-    @JoinColumn(name = "scholarship_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "scholarship_id", nullable = false)
     private Scholarship scholarship;
 
-    @ManyToOne
-    @JoinColumn(name = "foundation_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "foundation_id", nullable = false)
     private Foundation foundation;
 
+    @Column(name = "order_number", nullable = false, length = 100)
     private String orderNumber;
+
+    @Column(name = "issuance_end_date", nullable = false)
     private LocalDate issuanceEndDate;
+
+    @Column(name = "foundation_end_date")
     private LocalDate foundationEndDate;
 
     @Column(name = "is_permanent")
+    @Builder.Default
     private Boolean isPermanent = false;
 
-    public Student() {}
+    @Column(name = "created_date")
+    @Builder.Default
+    private LocalDate createdDate = LocalDate.now();
+
+    @Column(name = "updated_date")
+    private LocalDate updatedDate;
 
     public Student(String firstName, String lastName, String middleName,
                    int course, Faculty faculty, StudyForm studyForm,
@@ -57,45 +85,23 @@ public class Student {
         this.issuanceEndDate = issuanceEndDate;
         this.foundationEndDate = foundationEndDate;
         this.isPermanent = isPermanent != null ? isPermanent : false;
+        this.createdDate = LocalDate.now();
     }
 
-    // Геттеры и сеттеры
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedDate = LocalDate.now();
+    }
 
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
+    @Column(name = "is_indefinite", nullable = false)
+    @Builder.Default
+    private Boolean isIndefinite = false;
 
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
+    public Boolean getIsIndefinite() {
+        return isIndefinite;
+    }
 
-    public String getMiddleName() { return middleName; }
-    public void setMiddleName(String middleName) { this.middleName = middleName; }
-
-    public int getCourse() { return course; }
-    public void setCourse(int course) { this.course = course; }
-
-    public Faculty getFaculty() { return faculty; }
-    public void setFaculty(Faculty faculty) { this.faculty = faculty; }
-
-    public StudyForm getStudyForm() { return studyForm; }
-    public void setStudyForm(StudyForm studyForm) { this.studyForm = studyForm; }
-
-    public Scholarship getScholarship() { return scholarship; }
-    public void setScholarship(Scholarship scholarship) { this.scholarship = scholarship; }
-
-    public Foundation getFoundation() { return foundation; }
-    public void setFoundation(Foundation foundation) { this.foundation = foundation; }
-
-    public String getOrderNumber() { return orderNumber; }
-    public void setOrderNumber(String orderNumber) { this.orderNumber = orderNumber; }
-
-    public LocalDate getIssuanceEndDate() { return issuanceEndDate; }
-    public void setIssuanceEndDate(LocalDate issuanceEndDate) { this.issuanceEndDate = issuanceEndDate; }
-
-    public LocalDate getFoundationEndDate() { return foundationEndDate; }
-    public void setFoundationEndDate(LocalDate foundationEndDate) { this.foundationEndDate = foundationEndDate; }
-
-    public Boolean getIsPermanent() { return isPermanent; }
-    public void setIsPermanent(Boolean isPermanent) { this.isPermanent = isPermanent; }
+    public void setIsIndefinite(Boolean isIndefinite) {
+        this.isIndefinite = isIndefinite;
+    }
 }

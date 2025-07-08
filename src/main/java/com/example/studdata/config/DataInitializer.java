@@ -50,11 +50,11 @@ public class DataInitializer implements CommandLineRunner {
             }
             log.info("✅ Добавлено {} факультетов", faculties.length);
         } else {
-            if (facultyRepository.findByName("Управление") == null) {
+            if (facultyRepository.findFirstByName("Управление") == null) {
                 facultyRepository.save(new Faculty("Управление"));
                 log.info("✅ Добавлен факультет: Управление");
             }
-            if (facultyRepository.findByName("Колледж") == null) {
+            if (facultyRepository.findFirstByName("Колледж") == null) {
                 facultyRepository.save(new Faculty("Колледж"));
                 log.info("✅ Добавлен факультет: Колледж");
             }
