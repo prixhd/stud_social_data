@@ -37,20 +37,22 @@ public class StudentController {
     @Autowired
     private StudentService studentService;
 
-    @Autowired
-    private FacultyRepository facultyRepository;
-
-    @Autowired
-    private ScholarshipRepository scholarshipRepository;
-
-    @Autowired
-    private FoundationRepository foundationRepository;
-
-    @Autowired
-    private StudyFormRepository studyFormRepository;
+//    @Autowired
+//    private FacultyRepository facultyRepository;
+//
+//    @Autowired
+//    private ScholarshipRepository scholarshipRepository;
+//
+//    @Autowired
+//    private FoundationRepository foundationRepository;
+//
+//    @Autowired
+//    private StudyFormRepository studyFormRepository;
 
     @Autowired
     private ExcelExportService excelExportService;
+
+
 
     @GetMapping("/show")
     public String findAllStudents(Model model) {
@@ -85,7 +87,7 @@ public class StudentController {
     public String saveStudent(@RequestParam String firstName,
                               @RequestParam String lastName,
                               @RequestParam String middleName,
-                              @RequestParam int course,
+                              @RequestParam(required = false) String course, // ИЗМЕНЕНО на String
                               @RequestParam Long facultyId,
                               @RequestParam Long studyFormId,
                               @RequestParam Long scholarshipId,
@@ -96,21 +98,33 @@ public class StudentController {
                               @RequestParam(required = false) Boolean isPermanent,
                               Model model) {
 
-        Faculty faculty = facultyRepository.findById(facultyId).orElseThrow();
-        StudyForm studyForm = studyFormRepository.findById(studyFormId).orElseThrow();
-        Scholarship scholarship = scholarshipRepository.findById(scholarshipId).orElseThrow();
-        Foundation foundation = foundationRepository.findById(foundationId).orElseThrow();
+        // Обработка пустого курса
+        int courseValue = 1; // значение по умолчанию
+        if (course != null && !course.trim().isEmpty()) {
+            try {
+                courseValue = Integer.parseInt(course);
+            } catch (NumberFormatException e) {
+                courseValue = 1; // если не удалось парсить, ставим 1
+            }
+        }
 
-        // Если isPermanent true, то foundationEndDate не нужен
+        Faculty faculty = studentService.findFacultyById(facultyId);
+        StudyForm studyForm = studentService.findStudyFormById(studyFormId);
+        Scholarship scholarship = studentService.findScholarshipById(scholarshipId);
+        Foundation foundation = studentService.findFoundationById(foundationId);
+
         if (isPermanent != null && isPermanent) {
             foundationEndDate = null;
         }
 
         Student student = new Student(
-                firstName, lastName, middleName, course, faculty, studyForm,
-                scholarship, foundation, orderNumber, issuanceEndDate,
-                foundationEndDate, isPermanent
+                firstName, lastName, middleName, courseValue, // используем courseValue
+                faculty, studyForm, scholarship, foundation,
+                orderNumber, issuanceEndDate, foundationEndDate, isPermanent
         );
+
+        // Добавить поле isIndefinite
+        student.setIsIndefinite(false); // или установить логику
 
         model.addAttribute("title", "Добавление студента");
         model.addAttribute("pageActiveHome", "nav-link");
@@ -119,6 +133,20 @@ public class StudentController {
 
         studentService.saveStudent(student);
         return "add/students-add";
+    }
+
+    @GetMapping("show/check-foundation")
+    public String checkFoundationDateOfStudents(Model model) {
+        LocalDate currentDate = LocalDate.now();
+        List<Student> students = studentService.findStudentsByFoundationEndDateBeforeOrEqual(currentDate);
+
+        model.addAttribute("students", students);
+        model.addAttribute("title", "Студенты с просроченным сроком основания");
+        model.addAttribute("pageActiveHome", "nav-link");
+        model.addAttribute("pageActiveAdd", "nav-link");
+        model.addAttribute("pageActiveShow", "nav-link active");
+
+        return "show/students-show";
     }
 
     @GetMapping("/edit/{id}")
@@ -153,10 +181,10 @@ public class StudentController {
                                     @RequestParam(required = false) Boolean isPermanent,
                                     Model model) {
 
-        Faculty faculty = facultyRepository.findById(facultyId).orElseThrow();
-        StudyForm studyForm = studyFormRepository.findById(studyFormId).orElseThrow();
-        Scholarship scholarship = scholarshipRepository.findById(scholarshipId).orElseThrow();
-        Foundation foundation = foundationRepository.findById(foundationId).orElseThrow();
+        Faculty faculty = studentService.findFacultyById(facultyId);
+        StudyForm studyForm = studentService.findStudyFormById(studyFormId);
+        Scholarship scholarship = studentService.findScholarshipById(scholarshipId);
+        Foundation foundation = studentService.findFoundationById(foundationId);
 
         if (isPermanent != null && isPermanent) {
             foundationEndDate = null;
@@ -215,7 +243,7 @@ public class StudentController {
 
         // Добавляем фильтры
         if (facultyId.isPresent()) {
-            Faculty faculty = facultyRepository.findById(facultyId.get()).orElse(null);
+            Faculty faculty = studentService.findFacultyById(facultyId.get());
             if (faculty != null) {
                 spec = spec.and((root, query, criteriaBuilder) ->
                         criteriaBuilder.equal(root.get("faculty"), faculty));
@@ -223,7 +251,7 @@ public class StudentController {
         }
 
         if (scholarshipId.isPresent()) {
-            Scholarship scholarship = scholarshipRepository.findById(scholarshipId.get()).orElse(null);
+            Scholarship scholarship = studentService.findScholarshipById(scholarshipId.get());
             if (scholarship != null) {
                 spec = spec.and((root, query, criteriaBuilder) ->
                         criteriaBuilder.equal(root.get("scholarship"), scholarship));
@@ -231,7 +259,7 @@ public class StudentController {
         }
 
         if (studyFormId.isPresent()) {
-            StudyForm studyForm = studyFormRepository.findById(studyFormId.get()).orElse(null);
+            StudyForm studyForm = studentService.findStudyFormById(studyFormId.get());
             if (studyForm != null) {
                 spec = spec.and((root, query, criteriaBuilder) ->
                         criteriaBuilder.equal(root.get("studyForm"), studyForm));
@@ -239,7 +267,7 @@ public class StudentController {
         }
 
         if (foundationId.isPresent()) {
-            Foundation foundation = foundationRepository.findById(foundationId.get()).orElse(null);
+            Foundation foundation = studentService.findFoundationById(foundationId.get());
             if (foundation != null) {
                 spec = spec.and((root, query, criteriaBuilder) ->
                         criteriaBuilder.equal(root.get("foundation"), foundation));
@@ -349,7 +377,7 @@ public class StudentController {
             if (facultyId != null && !facultyId.isEmpty()) {
                 try {
                     Long fId = Long.parseLong(facultyId);
-                    Faculty faculty = facultyRepository.findById(fId).orElse(null);
+                    Faculty faculty = studentService.findFacultyById(fId);
                     if (faculty != null) {
                         spec = spec.and((root, query, criteriaBuilder) ->
                                 criteriaBuilder.equal(root.get("faculty"), faculty));
@@ -363,7 +391,7 @@ public class StudentController {
             if (scholarshipId != null && !scholarshipId.isEmpty()) {
                 try {
                     Long sId = Long.parseLong(scholarshipId);
-                    Scholarship scholarship = scholarshipRepository.findById(sId).orElse(null);
+                    Scholarship scholarship = studentService.findScholarshipById(sId);
                     if (scholarship != null) {
                         spec = spec.and((root, query, criteriaBuilder) ->
                                 criteriaBuilder.equal(root.get("scholarship"), scholarship));
@@ -377,7 +405,7 @@ public class StudentController {
             if (studyFormId != null && !studyFormId.isEmpty()) {
                 try {
                     Long sfId = Long.parseLong(studyFormId);
-                    StudyForm studyForm = studyFormRepository.findById(sfId).orElse(null);
+                    StudyForm studyForm = studentService.findStudyFormById(sfId);
                     if (studyForm != null) {
                         spec = spec.and((root, query, criteriaBuilder) ->
                                 criteriaBuilder.equal(root.get("studyForm"), studyForm));
@@ -391,7 +419,7 @@ public class StudentController {
             if (foundationId != null && !foundationId.isEmpty()) {
                 try {
                     Long fId = Long.parseLong(foundationId);
-                    Foundation foundation = foundationRepository.findById(fId).orElse(null);
+                    Foundation foundation = studentService.findFoundationById(fId);
                     if (foundation != null) {
                         spec = spec.and((root, query, criteriaBuilder) ->
                                 criteriaBuilder.equal(root.get("foundation"), foundation));

@@ -24,9 +24,10 @@
     </div>
 
     <form class="filters" id="filterForm" action="/students/show/filter">
+        <!-- ПЕРВАЯ СТРОКА - основные фильтры -->
         <div class="select-filters row g-3 mt-1">
 
-            <div class="faculty-filter col-md-2">
+            <div class="faculty-filter col-md-3">
                 <select name="faculty" class="form-select mt-2">
                     <option value="" selected disabled hidden>Факультет</option>
                     <option value="1" th:selected="${appliedFaculty == '1'}">Биологический</option>
@@ -50,7 +51,7 @@
                 </select>
             </div>
 
-            <div class="scholarship-filter col-md-2">
+            <div class="scholarship-filter col-md-3">
                 <select name="scholarship" class="form-select mt-2">
                     <option value="" selected disabled hidden>Стипендия</option>
                     <option value="1" th:selected="${appliedScholarship == '1'}">Социальная стипендия</option>
@@ -58,7 +59,7 @@
                 </select>
             </div>
 
-            <div class="studyForm-filter col-md-2">
+            <div class="studyForm-filter col-md-3">
                 <select name="studyForm" class="form-select mt-2">
                     <option value="" selected disabled hidden>Форма обучения</option>
                     <option value="1" th:selected="${appliedStudyForm == '1'}">Бакалавриат</option>
@@ -66,7 +67,7 @@
                 </select>
             </div>
 
-            <div class="foundation-filter col-md-2">
+            <div class="foundation-filter col-md-3">
                 <select name="foundation" class="form-select mt-2">
                     <option value="" selected disabled hidden>Основание</option>
                     <option value="1" th:selected="${appliedFoundation == '1'}">УСЗН</option>
@@ -77,7 +78,12 @@
             </div>
 
             <!-- Фильтр по курсу -->
-            <div class="course-filter col-md-2">
+
+        </div>
+
+        <!-- ВТОРАЯ СТРОКА - фильтры сортировки растянутые по контейнеру -->
+        <div class="sort-filters row g-3 mt-2">
+            <div class="course-filter col-md-4">
                 <select name="course" class="form-select mt-2">
                     <option value="" selected disabled hidden>Курс</option>
                     <option value="1" th:selected="${appliedCourse == '1'}">1 курс</option>
@@ -89,7 +95,7 @@
                 </select>
             </div>
 
-            <div class="sortColumn-filter col-md-2">
+            <div class="sortColumn-filter col-md-4">
                 <select name="sortColumn" class="form-select mt-2">
                     <option value="" selected disabled hidden>Сортировать по:</option>
                     <option value="id" th:selected="${appliedSortColumn == 'id'}">ID</option>
@@ -101,10 +107,8 @@
                     <option value="foundationEndDate" th:selected="${appliedSortColumn == 'foundationEndDate'}">Окончание срока основания</option>
                 </select>
             </div>
-        </div>
 
-        <div class="sort-direction row g-3 mt-2">
-            <div class="sortDirection-filter col-md-6">
+            <div class="sortDirection-filter col-md-4">
                 <select name="sortDirection" class="form-select mt-2">
                     <option value="" selected disabled hidden>Упорядочить по:</option>
                     <option value="asc" th:selected="${appliedSortDirection == 'asc'}">По возрастанию</option>
@@ -113,13 +117,16 @@
             </div>
         </div>
 
-        <!-- Кнопки (одинакового размера и цвета) -->
+        <!-- Кнопки -->
         <div class="buttons row mb-3 mt-3 justify-content-evenly">
             <button type="submit" class="btn btn-outline-primary col-6 col-md-2 mb-2">
                 🔍 Искать по фильтрам
             </button>
             <a class="btn btn-outline-primary col-6 col-md-2 mb-2" th:href="@{/students/show/check}">
-                ⏰ Проверить истечение срока
+                ⏰ Проверить дату окончания выдачи
+            </a>
+            <a class="btn btn-outline-primary col-6 col-md-2 mb-2" th:href="@{/students/show/check-foundation}">
+                📋 Проверить срок основания
             </a>
             <a class="btn btn-outline-primary col-6 col-md-2 mb-2" th:href="@{/students/show/week-ending}">
                 📅 Неделя окончания срока основания
@@ -135,6 +142,7 @@
             </button>
         </div>
     </form>
+
 
     <!-- Таблица обычного просмотра -->
     <div id="normalTable" class="alert alert-primary scrollable-table" style="font-size: 12px; overflow-x: auto">
