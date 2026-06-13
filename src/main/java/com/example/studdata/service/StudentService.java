@@ -37,12 +37,10 @@ public interface StudentService {
     List<Student> findByCreatedDateBetween(LocalDate startDate, LocalDate endDate);
     List<Student> findStudentsByFoundationEndDateBeforeOrEqual(LocalDate currentDate);
 
-
     // Статистика
     long countByFacultyId(Long facultyId);
 
     // Валидация
-//    boolean isOrderNumberUnique(String orderNumber, Long excludeId);
     void validateStudent(Student student);
 
     // Методы для получения справочников

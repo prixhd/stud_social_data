@@ -1,11 +1,10 @@
 package com.example.studdata.dto;
 
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import jakarta.validation.constraints.*;
 import java.time.LocalDate;
 
 @Data
@@ -48,12 +47,13 @@ public class StudentDto {
     private String orderNumber;
 
     @NotNull(message = "Дата окончания выдачи обязательна")
-    @Future(message = "Дата должна быть в будущем")
+    // @Future - УБРАТЬ ЭТУ СТРОКУ
     private LocalDate issuanceEndDate;
 
+    // Дата может быть в прошлом, настоящем или будущем
     private LocalDate foundationEndDate;
 
-    @Builder.Default  // Добавляем эту аннотацию
+    @Builder.Default
     private Boolean isPermanent = false;
 
     // Вспомогательные поля для отображения

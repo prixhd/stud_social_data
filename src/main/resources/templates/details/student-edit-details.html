@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${title}">Редактирование студента</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:insert="~{blocks/header :: header}"></div>
+
+<div class="container mt-5">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>✏️ Редактирование данных студента</h1>
+    <a th:href="@{/students/details/{id}(id=${student.id})}" class="btn btn-secondary">← Назад</a>
+  </div>
+
+  <div class="alert alert-warning">
+    <strong>⚠️ Внимание:</strong> Здесь редактируются только базовые данные студента (ФИО, курс, факультет).
+    Для изменения данных о стипендии добавьте новый приказ.
+  </div>
+
+  <!-- ФОРМА РЕДАКТИРОВАНИЯ -->
+  <form th:action="@{/students/details/{id}/edit(id=${student.id})}" method="post" class="needs-validation" novalidate>
+
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Личные данные</h5>
+      </div>
+      <div class="card-body">
+
+        <div class="row">
+          <!-- Фамилия -->
+          <div class="col-md-4 mb-3">
+            <label for="lastName" class="form-label">Фамилия <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="lastName" name="lastName"
+                   th:value="${student.lastName}" required>
+            <div class="invalid-feedback">Введите фамилию</div>
+          </div>
+
+          <!-- Имя -->
+          <div class="col-md-4 mb-3">
+            <label for="firstName" class="form-label">Имя <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="firstName" name="firstName"
+                   th:value="${student.firstName}" required>
+            <div class="invalid-feedback">Введите имя</div>
+          </div>
+
+          <!-- Отчество -->
+          <div class="col-md-4 mb-3">
+            <label for="middleName" class="form-label">Отчество</label>
+            <input type="text" class="form-control" id="middleName" name="middleName"
+                   th:value="${student.middleName}">
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Курс -->
+          <div class="col-md-4 mb-3">
+            <label for="course" class="form-label">Курс <span class="text-danger">*</span></label>
+            <select class="form-select" id="course" name="course" required>
+              <option th:each="i : ${#numbers.sequence(1, 6)}"
+                      th:value="${i}"
+                      th:text="${i + ' курс'}"
+                      th:selected="${student.course == i}">
+              </option>
+            </select>
+            <div class="invalid-feedback">Выберите курс</div>
+          </div>
+
+          <!-- Факультет -->
+          <div class="col-md-4 mb-3">
+            <label for="facultyId" class="form-label">Факультет <span class="text-danger">*</span></label>
+            <select class="form-select" id="facultyId" name="facultyId" required>
+              <option th:each="faculty : ${faculties}"
+                      th:value="${faculty.id}"
+                      th:text="${faculty.name}"
+                      th:selected="${student.faculty?.id == faculty.id}">
+              </option>
+            </select>
+            <div class="invalid-feedback">Выберите факультет</div>
+          </div>
+
+          <!-- Форма обучения -->
+          <div class="col-md-4 mb-3">
+            <label for="studyFormId" class="form-label">Форма обучения <span class="text-danger">*</span></label>
+            <select class="form-select" id="studyFormId" name="studyFormId" required>
+              <option th:each="studyForm : ${studyForms}"
+                      th:value="${studyForm.id}"
+                      th:text="${studyForm.name}"
+                      th:selected="${student.studyForm?.id == studyForm.id}">
+              </option>
+            </select>
+            <div class="invalid-feedback">Выберите форму обучения</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-success btn-lg">💾 Сохранить изменения</button>
+      <a th:href="@{/students/details/{id}(id=${student.id})}" class="btn btn-outline-secondary btn-lg">Отмена</a>
+    </div>
+
+  </form>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Валидация формы Bootstrap
+  (function () {
+      'use strict'
+      const forms = document.querySelectorAll('.needs-validation')
+      Array.from(forms).forEach(form => {
+          form.addEventListener('submit', event => {
+              if (!form.checkValidity()) {
+                  event.preventDefault()
+                  event.stopPropagation()
+              }
+              form.classList.add('was-validated')
+          }, false)
+      })
+  })()
+</script>
+
+</body>
+</html>

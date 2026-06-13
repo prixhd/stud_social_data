@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Детали студента</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .info-card {
+            border-left: 4px solid #0d6efd;
+        }
+        .history-timeline {
+            position: relative;
+            padding-left: 50px;
+        }
+        .history-timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #198754, #dee2e6);
+        }
+        .timeline-item {
+            position: relative;
+            padding-bottom: 1.5rem;
+            transition: transform 0.2s;
+        }
+        .timeline-item:hover {
+            transform: translateX(5px);
+        }
+        .timeline-number {
+            position: absolute;
+            left: -45px;
+            top: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #6c757d;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        .timeline-number.active {
+            background: #198754;
+            box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.2);
+        }
+        .order-card {
+            transition: all 0.3s ease;
+            border: 1px solid #dee2e6;
+        }
+        .order-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .order-card.active-order {
+            border: 2px solid #198754;
+            box-shadow: 0 4px 15px rgba(25, 135, 84, 0.15);
+            background: linear-gradient(to right, #ffffff, #f8fff9);
+        }
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0 2px;
+        }
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .btn-edit {
+            background-color: #e3f2fd;
+            color: #0d6efd;
+        }
+        .btn-edit:hover {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .btn-activate {
+            background-color: #e8f5e9;
+            color: #198754;
+        }
+        .btn-activate:hover {
+            background-color: #198754;
+            color: white;
+        }
+        .btn-delete {
+            background-color: #ffebee;
+            color: #dc3545;
+        }
+        .btn-delete:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-delete.active-order-btn {
+            background-color: #fee;
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+        .btn-delete.active-order-btn:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .order-title {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+
+<div th:insert="~{blocks/header :: header}"></div>
+
+<div class="container mt-4">
+
+    <!-- BREADCRUMBS -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/}">Главная</a></li>
+            <li class="breadcrumb-item"><a th:href="@{${returnUrl}}">Список студентов</a></li>
+            <li class="breadcrumb-item active" th:text="${student.fullName}">Студент</li>
+        </ol>
+    </nav>
+
+    <!-- УВЕДОМЛЕНИЯ -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm">
+        <strong>✅</strong> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm">
+        <strong>❌</strong> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- ЗАГОЛОВОК -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>👤 <span th:text="${student.fullName}">Иванов Иван Иванович</span></h1>
+        <a th:href="@{${returnUrl}}" class="btn btn-outline-secondary">← Назад к списку</a>
+    </div>
+
+    <!-- ОСНОВНАЯ ИНФОРМАЦИЯ -->
+    <div class="card mb-4 info-card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">📋 Основная информация</h5>
+            <a th:href="@{/students/details/{id}/edit(id=${student.id}, returnUrl=${returnUrl})}" class="btn btn-light btn-sm">✏️ Редактировать</a>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless mb-0">
+                        <tr><td width="150"><strong>Фамилия:</strong></td><td th:text="${student.lastName}">Иванов</td></tr>
+                        <tr><td><strong>Имя:</strong></td><td th:text="${student.firstName}">Иван</td></tr>
+                        <tr><td><strong>Отчество:</strong></td><td th:text="${student.middleName ?: '-'}">Иванович</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless mb-0">
+                        <tr><td width="180"><strong>Курс:</strong></td><td><span class="badge bg-info" th:text="${student.course + ' курс'}">2 курс</span></td></tr>
+                        <tr><td><strong>Факультет:</strong></td><td th:text="${student.faculty?.name}">Физический</td></tr>
+                        <tr><td><strong>Форма обучения:</strong></td><td th:text="${student.studyForm?.name}">Бакалавриат</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ ТЕКУЩИЙ АКТИВНЫЙ ПРИКАЗ (ИСПРАВЛЕННЫЙ - убран stream().filter()) -->
+    <div class="card mb-4 border-success shadow-sm">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">📝 Текущий активный приказ</h5>
+            <span class="badge bg-white text-success">АКТИВНО</span>
+        </div>
+        <div class="card-body">
+            <!-- ✅ Используем activeOrder из контроллера, а не ищем через stream() -->
+            <div th:if="${activeOrder != null}">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless mb-0">
+                            <tr><td width="200"><strong>Стипендия:</strong></td><td th:text="${activeOrder.scholarship?.name}">Социальная стипендия</td></tr>
+                            <tr><td><strong>Основание:</strong></td><td th:text="${activeOrder.foundation?.name}">УСЗН</td></tr>
+                            <tr><td><strong>Номер приказа:</strong></td><td><code class="bg-light px-2 py-1 rounded" th:text="${activeOrder.orderNumber}">3189-с</code></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless mb-0">
+                            <tr>
+                                <td width="220"><strong>Дата окончания выдачи:</strong></td>
+                                <td><span class="badge bg-primary" th:text="${#temporals.format(activeOrder.issuanceEndDate, 'dd.MM.yyyy')}">31.12.2026</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Окончание срока основания:</strong></td>
+                                <td>
+                                    <span th:if="${activeOrder.isPermanent}" class="badge bg-info">♾️ Бессрочно</span>
+                                    <span th:unless="${activeOrder.isPermanent}" class="badge bg-warning text-dark" th:text="${activeOrder.foundationEndDate != null ? #temporals.format(activeOrder.foundationEndDate, 'dd.MM.yyyy') : '-'}">31.12.2027</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Статус:</strong></td>
+                                <td>
+                                    <span th:if="${activeOrder.issuanceEndDate.isBefore(T(java.time.LocalDate).now())}" class="badge bg-danger">❌ Истёк</span>
+                                    <span th:if="${activeOrder.issuanceEndDate.isAfter(T(java.time.LocalDate).now()) && activeOrder.issuanceEndDate.isBefore(T(java.time.LocalDate).now().plusWeeks(2))}" class="badge bg-warning text-dark">⚠️ Истекает</span>
+                                    <span th:if="${activeOrder.issuanceEndDate.isAfter(T(java.time.LocalDate).now().plusWeeks(2))}" class="badge bg-success">✅ Действует</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Если активного нет (старые данные) -->
+            <div th:if="${activeOrder == null}">
+                <div class="alert alert-warning mb-0">
+                    <small>⚠️ Нет активного приказа в истории. Показаны данные из карточки студента:</small>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <table class="table table-borderless mb-0">
+                            <tr><td width="200"><strong>Стипендия:</strong></td><td th:text="${student.scholarship?.name}">-</td></tr>
+                            <tr><td><strong>Основание:</strong></td><td th:text="${student.foundation?.name}">-</td></tr>
+                            <tr><td><strong>Номер приказа:</strong></td><td><code th:text="${student.orderNumber}">-</code></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless mb-0">
+                            <tr><td width="220"><strong>Дата окончания выдачи:</strong></td><td th:text="${#temporals.format(student.issuanceEndDate, 'dd.MM.yyyy')}">-</td></tr>
+                            <tr>
+                                <td><strong>Окончание срока основания:</strong></td>
+                                <td>
+                                    <span th:if="${student.isPermanent}" class="badge bg-info">♾️ Бессрочно</span>
+                                    <span th:unless="${student.isPermanent}" th:text="${student.foundationEndDate != null ? #temporals.format(student.foundationEndDate, 'dd.MM.yyyy') : '-'}">-</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- КНОПКА ДОБАВИТЬ НОВЫЙ ПРИКАЗ -->
+    <div class="text-center mb-4">
+        <a th:href="@{/students/details/{id}/add-order(id=${student.id}, returnUrl=${returnUrl})}" class="btn btn-success btn-lg px-5 shadow-sm">
+            ➕ Добавить новый приказ (справку)
+        </a>
+    </div>
+
+    <!-- ИСТОРИЯ ПРИКАЗОВ -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">📚 История приказов</h5>
+            <span class="badge bg-light text-dark fs-6" th:text="${orders.size()} + ' шт.'">0 шт.</span>
+        </div>
+        <div class="card-body">
+            <!-- Если история пуста -->
+            <div th:if="${orders == null or orders.isEmpty()}" class="alert alert-warning text-center py-4">
+                <h5 class="text-muted">📭 История приказов пуста</h5>
+                <p class="mb-0 text-muted">Данные о стипендии при создании студента не были сохранены в истории.</p>
+                <small class="text-muted">Добавьте первый приказ выше.</small>
+            </div>
+
+            <!-- Если есть приказы -->
+            <div th:unless="${orders == null or orders.isEmpty()}" class="history-timeline">
+
+                <!-- Сначала активный приказ (если есть) -->
+                <div th:each="order : ${orders}" th:if="${order.isActive}" class="timeline-item">
+                    <div class="timeline-number active">1</div>
+
+                    <div class="card order-card active-order">
+                        <div class="card-body">
+                            <div class="order-header mb-3">
+                                <div>
+                                    <h6 class="order-title mb-1">
+                                        🟢 <span th:text="${order.scholarship?.name}">Социальная стипендия</span>
+                                        <span class="badge bg-success ms-2">АКТИВНЫЙ</span>
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar"></i> Добавлено: <span th:text="${#temporals.format(order.createdDate, 'dd.MM.yyyy')}">01.01.2024</span>
+                                    </small>
+                                </div>
+
+                                <!-- Кнопки действий для активного -->
+                                <div class="d-flex gap-1">
+                                    <a th:href="@{/students/details/{studentId}/order/{orderId}/edit(studentId=${student.id}, orderId=${order.id}, returnUrl=${returnUrl})}" class="action-btn btn-edit" title="Редактировать приказ">✏️</a>
+
+                                    <form th:action="@{/students/details/{studentId}/order/{orderId}/delete(studentId=${student.id}, orderId=${order.id})}" method="post" style="display:inline;" onsubmit="return confirm('⚠️ ВНИМАНИЕ! Вы удаляете текущий АКТИВНЫЙ приказ!\n\nПродолжить?')">
+                                        <button type="submit" class="action-btn btn-delete active-order-btn" title="Удалить активный приказ">🗑️</button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <div class="row bg-white bg-opacity-50 rounded p-2">
+                                <div class="col-md-6">
+                                    <small class="d-block mb-1"><strong>Основание:</strong> <span th:text="${order.foundation?.name}">Инвалидность</span></small>
+                                    <small class="d-block"><strong>Номер приказа:</strong> <code class="bg-light px-1 rounded" th:text="${order.orderNumber}">123-с</code></small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="d-block mb-1"><strong>Срок выдачи до:</strong> <span th:text="${#temporals.format(order.issuanceEndDate, 'dd.MM.yyyy')}" class="text-primary fw-bold">31.12.2024</span></small>
+                                    <small class="d-block"><strong>Основание до:</strong>
+                                        <span th:if="${order.isPermanent}" class="text-info fw-bold">♾️ Бессрочно</span>
+                                        <span th:unless="${order.isPermanent}" th:text="${order.foundationEndDate != null ? #temporals.format(order.foundationEndDate, 'dd.MM.yyyy') : '-'}">31.12.2024</span>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Затем неактивные приказы с нумерацией 2, 3, 4... -->
+                <div th:each="order, iterStat : ${orders}" th:if="${!order.isActive}" class="timeline-item">
+                    <div class="timeline-number" th:text="${iterStat.count + 1}">2</div>
+
+                    <div class="card order-card">
+                        <div class="card-body">
+                            <div class="order-header mb-3">
+                                <div>
+                                    <h6 class="order-title mb-1 text-secondary">
+                                        <span th:text="${order.scholarship?.name}">Академическая стипендия</span>
+                                        <span th:if="${order.isPermanent}" class="badge bg-info text-white ms-1">♾️ Бессрочно</span>
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar"></i> Добавлено: <span th:text="${#temporals.format(order.createdDate, 'dd.MM.yyyy')}">01.01.2023</span>
+                                    </small>
+                                </div>
+
+                                <!-- Кнопки действий для неактивного -->
+                                <div class="d-flex gap-1">
+                                    <a th:href="@{/students/details/{studentId}/order/{orderId}/edit(studentId=${student.id}, orderId=${order.id}, returnUrl=${returnUrl})}" class="action-btn btn-edit" title="Редактировать приказ">✏️</a>
+
+                                    <form th:action="@{/students/{studentId}/orders/activate/{orderId}(studentId=${student.id}, orderId=${order.id})}" method="post" style="display:inline;" onsubmit="return confirm('Сделать этот приказ активным?\n\nТекущий активный приказ будет автоматически деактивирован.')">
+                                        <button type="submit" class="action-btn btn-activate" title="Сделать активным">✅</button>
+                                    </form>
+
+                                    <form th:action="@{/students/details/{studentId}/order/{orderId}/delete(studentId=${student.id}, orderId=${order.id})}" method="post" style="display:inline;" onsubmit="return confirm('Удалить этот приказ из истории?')">
+                                        <button type="submit" class="action-btn btn-delete" title="Удалить приказ">🗑️</button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="d-block mb-1"><strong>Основание:</strong> <span th:text="${order.foundation?.name}">Сиротство</span></small>
+                                    <small class="d-block"><strong>Номер приказа:</strong> <code class="bg-light px-1 rounded" th:text="${order.orderNumber}">456-с</code></small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="d-block mb-1"><strong>Срок выдачи до:</strong> <span th:text="${#temporals.format(order.issuanceEndDate, 'dd.MM.yyyy')}">31.12.2023</span></small>
+                                    <small class="d-block"><strong>Основание до:</strong>
+                                        <span th:if="${order.isPermanent}" class="text-info">♾️ Бессрочно</span>
+                                        <span th:unless="${order.isPermanent}" th:text="${order.foundationEndDate != null ? #temporals.format(order.foundationEndDate, 'dd.MM.yyyy') : '-'}">31.12.2023</span>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

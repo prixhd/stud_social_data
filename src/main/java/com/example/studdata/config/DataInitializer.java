@@ -1,42 +1,44 @@
 package com.example.studdata.config;
 
-import com.example.studdata.dao.FacultyRepository;
-import com.example.studdata.dao.FoundationRepository;
-import com.example.studdata.dao.ScholarshipRepository;
-import com.example.studdata.dao.StudyFormRepository;
-import com.example.studdata.model.Faculty;
-import com.example.studdata.model.Foundation;
-import com.example.studdata.model.Scholarship;
-import com.example.studdata.model.StudyForm;
-import lombok.AllArgsConstructor;
+import com.example.studdata.dao.*;
+import com.example.studdata.model.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class DataInitializer implements CommandLineRunner {
-    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
-    @Autowired
-    private FacultyRepository facultyRepository;
-
-    @Autowired
-    private ScholarshipRepository scholarshipRepository;
-
-    @Autowired
-    private FoundationRepository foundationRepository;
-
-    @Autowired
-    private StudyFormRepository studyFormRepository;
+    private final FacultyRepository facultyRepository;
+    private final ScholarshipRepository scholarshipRepository;
+    private final FoundationRepository foundationRepository;
+    private final StudyFormRepository studyFormRepository;
 
     @Override
-    public void run(String... args) throws Exception {
-        log.info("🔄 Инициализация базовых данных...");
+    @Transactional
+    public void run(String... args) {
+        log.info("🚀 Запуск инициализации справочных данных...");
 
+        try {
+            initializeFaculties();
+            initializeStudyForms();
+            initializeScholarships();
+            initializeFoundations();
+
+            log.info("✅ Инициализация справочных данных завершена успешно");
+        } catch (Exception e) {
+            log.error("❌ Ошибка при инициализации справочных данных", e);
+        }
+    }
+
+    private void initializeFaculties() {
         if (facultyRepository.count() == 0) {
+            log.info("Создание факультетов...");
+
             String[] faculties = {
                     "Биологический", "Востоковедения", "Физкультурный", "Социальный",
                     "Исторический", "ФИЯ", "ФИиИТ", "Культуры", "Математический",
@@ -45,51 +47,74 @@ public class DataInitializer implements CommandLineRunner {
                     "Управление", "Колледж"
             };
 
-            for (String facultyName : faculties) {
-                facultyRepository.save(new Faculty(facultyName));
+            for (String name : faculties) {
+                facultyRepository.save(Faculty.builder().name(name).build());
             }
-            log.info("✅ Добавлено {} факультетов", faculties.length);
-        } else {
-            if (facultyRepository.findFirstByName("Управление") == null) {
-                facultyRepository.save(new Faculty("Управление"));
-                log.info("✅ Добавлен факультет: Управление");
-            }
-            if (facultyRepository.findFirstByName("Колледж") == null) {
-                facultyRepository.save(new Faculty("Колледж"));
-                log.info("✅ Добавлен факультет: Колледж");
-            }
-        }
 
+            log.info("✅ Создано {} факультетов", facultyRepository.count());
+        } else {
+            log.info("Факультеты уже существуют ({})", facultyRepository.count());
+        }
+    }
+
+    private void initializeStudyForms() {
         if (studyFormRepository.count() == 0) {
-            studyFormRepository.save(new StudyForm("Бакалавриат"));
-            studyFormRepository.save(new StudyForm("Магистратура"));
-            log.info("✅ Добавлены формы обучения");
-        }
+            log.info("Создание форм обучения...");
 
-        if (scholarshipRepository.count() == 0) {
-            scholarshipRepository.save(new Scholarship("Социальная стипендия"));
-            scholarshipRepository.save(new Scholarship("Социальная стипендия в повышенном размере"));
-            log.info("✅ Добавлены типы стипендий");
-        }
+            String[] studyForms = {
+                    "Бакалавриат", "Магистратура", "Специалитет", "Аспирантура"
+            };
 
-        if (foundationRepository.count() == 0) {
-            foundationRepository.save(new Foundation("УСЗН"));
-            foundationRepository.save(new Foundation("Инвалидность"));
-            foundationRepository.save(new Foundation("Постановление"));
-            foundationRepository.save(new Foundation("Ветеран боевых действий"));
-            log.info("✅ Добавлены основания");
-        } else {
-            Foundation oldFoundation = foundationRepository.findByName("Военнослужащий");
-            if (oldFoundation != null) {
-                oldFoundation.setName("Ветеран боевых действий");
-                foundationRepository.save(oldFoundation);
-                log.info("✅ Обновлено основание: Военнослужащий -> Ветеран боевых действий");
-            } else if (foundationRepository.findByName("Ветеран боевых действий") == null) {
-                foundationRepository.save(new Foundation("Ветеран боевых действий"));
-                log.info("✅ Добавлено основание: Ветеран боевых действий");
+            for (String name : studyForms) {
+                studyFormRepository.save(StudyForm.builder().name(name).build());
             }
-        }
 
-        log.info("🎉 Инициализация базовых данных завершена!");
+            log.info("✅ Создано {} форм обучения", studyFormRepository.count());
+        } else {
+            log.info("Формы обучения уже существуют ({})", studyFormRepository.count());
+        }
+    }
+
+    private void initializeScholarships() {
+        if (scholarshipRepository.count() == 0) {
+            log.info("Создание видов стипендий...");
+
+            String[] scholarships = {
+                    "Социальная стипендия",
+                    "Социальная стипендия в повышенном размере",
+                    "Академическая стипендия",
+                    "Именная стипендия",
+                    "Стипендия Президента РФ",
+                    "Стипендия Правительства РФ"
+            };
+
+            for (String name : scholarships) {
+                scholarshipRepository.save(Scholarship.builder().name(name).build());
+            }
+
+            log.info("✅ Создано {} видов стипендий", scholarshipRepository.count());
+        } else {
+            log.info("Стипендии уже существуют ({})", scholarshipRepository.count());
+        }
+    }
+
+    private void initializeFoundations() {
+        if (foundationRepository.count() == 0) {
+            log.info("Создание оснований...");
+
+            String[] foundations = {
+                    "УСЗН", "Инвалидность", "Постановление",
+                    "Ветеран боевых действий", "Сирота",
+                    "Малообеспеченная семья", "Многодетная семья"
+            };
+
+            for (String name : foundations) {
+                foundationRepository.save(Foundation.builder().name(name).build());
+            }
+
+            log.info("✅ Создано {} оснований", foundationRepository.count());
+        } else {
+            log.info("Основания уже существуют ({})", foundationRepository.count());
+        }
     }
 }

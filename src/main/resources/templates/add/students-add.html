@@ -1,179 +1,314 @@
-<!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org" lang="">
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Добавление студента</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" media="all"
-          href="../../css/style.css" th:href="@{/css/style.css}" />
-    <title th:text="${title}"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .form-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .form-section h5 {
+            color: #0d6efd;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        .required-label::after {
+            content: " *";
+            color: red;
+        }
+    </style>
 </head>
 <body>
-<header th:insert="~{blocks/header :: header}"></header>
 
-<div class="container mt-5">
-    <!-- Сообщения об ошибках и успехе -->
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <span th:text="${successMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div th:insert="~{blocks/header :: header}"></div>
+
+<div class="container mt-4">
+
+    <!-- BREADCRUMBS -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/}">Главная</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/students/show}">Список студентов</a></li>
+            <li class="breadcrumb-item active">Добавление студента</li>
+        </ol>
+    </nav>
+
+    <!-- ЗАГОЛОВОК -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>➕ Добавление нового студента</h1>
+        <a th:href="@{/students/show}" class="btn btn-outline-secondary">← Назад к списку</a>
     </div>
 
-    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-        <span th:text="${errorMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <!-- ИНФОРМАЦИОННЫЙ БАННЕР -->
+    <div class="alert alert-info alert-dismissible fade show">
+        <strong>ℹ️ Подсказка:</strong> Заполните все обязательные поля, отмеченные звёздочкой (<span class="text-danger">*</span>).
+        Даты можно устанавливать любые (включая прошлые).
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <h1>Добавление студента</h1>
+    <!-- УВЕДОМЛЕНИЯ ОБ УСПЕХЕ -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
+        <strong>✅ Успешно!</strong> <span th:text="${success}">Студент добавлен</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 
-    <form id="addStudentForm" method="post" action="/students/add">
+    <!-- ФОРМА -->
+    <form th:action="@{/students/add}" method="post" class="needs-validation" novalidate>
 
-        <input type="text" name="lastName" placeholder="Фамилия" class="form-control mt-4" required>
+        <!-- СЕКЦИЯ 1: ЛИЧНЫЕ ДАННЫЕ -->
+        <div class="form-section">
+            <h5>👤 Личные данные</h5>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="lastName" class="form-label required-label">Фамилия</label>
+                    <input type="text" class="form-control" id="lastName" name="lastName"
+                           placeholder="Иванов" required>
+                    <div class="invalid-feedback">Введите фамилию</div>
+                </div>
 
-        <input type="text" name="firstName" placeholder="Имя" class="form-control mt-2" required>
+                <div class="col-md-4 mb-3">
+                    <label for="firstName" class="form-label required-label">Имя</label>
+                    <input type="text" class="form-control" id="firstName" name="firstName"
+                           placeholder="Иван" required>
+                    <div class="invalid-feedback">Введите имя</div>
+                </div>
 
-        <input type="text" name="middleName" placeholder="Отчество" class="form-control mt-2" required>
-
-        <!-- Объединенное поле курс + форма обучения -->
-        <select id="courseStudyForm" class="form-select mt-2" required onchange="setCourseAndStudyForm()">
-            <option value="" selected disabled hidden>Курс</option>
-            <option value="1-1">Бакалавриат, 1 курс</option>
-            <option value="1-2">Бакалавриат, 2 курс</option>
-            <option value="1-3">Бакалавриат, 3 курс</option>
-            <option value="1-4">Бакалавриат, 4 курс</option>
-            <option value="1-5">Бакалавриат, 5 курс</option>
-            <option value="2-1">Магистратура, 1 курс</option>
-            <option value="2-2">Магистратура, 2 курс</option>
-        </select>
-
-        <!-- Скрытые поля для отправки на сервер -->
-        <input type="hidden" name="course" id="hiddenCourse">
-        <input type="hidden" name="studyFormId" id="hiddenStudyFormId">
-
-        <select name="facultyId" class="form-select mt-2" required>
-            <option value="" selected disabled hidden>Факультет</option>
-            <option value="1">Биологический</option>
-            <option value="2">Востоковедения</option>
-            <option value="3">Физкультурный</option>
-            <option value="4">Социальный</option>
-            <option value="5">Исторический</option>
-            <option value="6">ФИЯ</option>
-            <option value="7">ФИиИТ</option>
-            <option value="8">Культуры</option>
-            <option value="9">Математический</option>
-            <option value="10">Психологии и философии</option>
-            <option value="11">Физический</option>
-            <option value="12">Филологический</option>
-            <option value="13">Химический</option>
-            <option value="14">Экологии</option>
-            <option value="15">Экономики</option>
-            <option value="16">Юридический</option>
-            <option value="17">Управление</option>
-            <option value="18">Колледж</option>
-        </select>
-
-        <select name="scholarshipId" class="form-select mt-2" required>
-            <option value="" selected disabled hidden>Стипендия</option>
-            <option value="1">Социальная стипендия</option>
-            <option value="2">Социальная стипендия в повышенном размере</option>
-        </select>
-
-        <input type="text" name="orderNumber" placeholder="Номер приказа (например: 3189-с от 19.08.24)" class="form-control mt-2" required>
-
-        <div class="row g-3 mt-1">
-            <div class="col-md-4">
-                <label for="issuanceEndDate" class="form-label">Дата окончания выдачи:</label>
-                <input type="date" id="issuanceEndDate" name="issuanceEndDate" class="form-control" required>
-            </div>
-
-            <div class="col-md-4">
-                <label for="foundationEndDate" class="form-label">Окончание срока основания:</label>
-                <input type="date" id="foundationEndDate" name="foundationEndDate" class="form-control">
-            </div>
-
-            <div class="col-md-4">
-                <div class="form-check mt-4">
-                    <input class="form-check-input" type="checkbox" id="isPermanent" name="isPermanent" onchange="toggleFoundationEndDate()">
-                    <label class="form-check-label" for="isPermanent">
-                        Бессрочно
-                    </label>
+                <div class="col-md-4 mb-3">
+                    <label for="middleName" class="form-label">Отчество</label>
+                    <input type="text" class="form-control" id="middleName" name="middleName"
+                           placeholder="Иванович">
+                    <small class="form-text text-muted">Необязательно</small>
                 </div>
             </div>
         </div>
 
-        <select name="foundationId" class="form-select mt-4" required>
-            <option value="" selected disabled hidden>Основание</option>
-            <option value="1">УСЗН</option>
-            <option value="2">Инвалидность</option>
-            <option value="3">Постановление</option>
-            <option value="4">Ветеран боевых действий</option>
-        </select>
+        <!-- СЕКЦИЯ 2: ОБУЧЕНИЕ -->
+        <div class="form-section">
+            <h5>🎓 Данные об обучении</h5>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="facultyId" class="form-label required-label">Факультет</label>
+                    <select class="form-select" id="facultyId" name="facultyId" required onchange="updateCourseOptions()">
+                        <option value="" selected disabled>Выберите факультет</option>
+                        <option th:each="faculty : ${faculties}"
+                                th:value="${faculty.id}"
+                                th:text="${faculty.name}"
+                                th:attr="data-name=${faculty.name}">
+                        </option>
+                    </select>
+                    <div class="invalid-feedback">Выберите факультет</div>
+                </div>
 
-        <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#exampleModal">
-            Добавить студента
-        </button>
+                <div class="col-md-4 mb-3">
+                    <label for="studyFormId" class="form-label required-label">Форма обучения</label>
+                    <select class="form-select" id="studyFormId" name="studyFormId" required onchange="updateCourseOptions()">
+                        <option value="" selected disabled>Выберите форму</option>
+                        <option th:each="studyForm : ${studyForms}"
+                                th:value="${studyForm.id}"
+                                th:text="${studyForm.name}"
+                                th:attr="data-name=${studyForm.name}">
+                        </option>
+                    </select>
+                    <div class="invalid-feedback">Выберите форму обучения</div>
+                </div>
 
-        <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel">Сохранение студента</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        Вы уверены, что хотите сохранить студента в базу данных?
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет</button>
-                        <button type="submit" class="btn btn-primary">Сохранить</button>
-                    </div>
+                <div class="col-md-4 mb-3">
+                    <label for="course" class="form-label required-label">Курс</label>
+                    <select class="form-select" id="course" name="course" required>
+                        <option value="" selected disabled>Сначала выберите факультет</option>
+                    </select>
+                    <div class="invalid-feedback">Выберите курс</div>
+                    <small id="courseHint" class="form-text text-muted"></small>
                 </div>
             </div>
         </div>
+
+        <!-- СЕКЦИЯ 3: СТИПЕНДИЯ И ОСНОВАНИЕ -->
+        <div class="form-section">
+            <h5>💰 Стипендия и основание</h5>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="scholarshipId" class="form-label required-label">Тип стипендии</label>
+                    <select class="form-select" id="scholarshipId" name="scholarshipId" required>
+                        <option value="" selected disabled>Выберите стипендию</option>
+                        <option th:each="scholarship : ${scholarships}"
+                                th:value="${scholarship.id}"
+                                th:text="${scholarship.name}">
+                        </option>
+                    </select>
+                    <div class="invalid-feedback">Выберите стипендию</div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="foundationId" class="form-label required-label">Основание</label>
+                    <select class="form-select" id="foundationId" name="foundationId" required>
+                        <option value="" selected disabled>Выберите основание</option>
+                        <option th:each="foundation : ${foundations}"
+                                th:value="${foundation.id}"
+                                th:text="${foundation.name}">
+                        </option>
+                    </select>
+                    <div class="invalid-feedback">Выберите основание</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- СЕКЦИЯ 4: ПРИКАЗ -->
+        <div class="form-section">
+            <h5>📄 Данные приказа</h5>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="orderNumber" class="form-label required-label">Номер приказа</label>
+                    <input type="text" class="form-control" id="orderNumber" name="orderNumber"
+                           placeholder="Например: 3189-с" required>
+                    <div class="invalid-feedback">Введите номер приказа</div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="issuanceEndDate" class="form-label required-label">Дата окончания выдачи</label>
+                    <input type="date" class="form-control" id="issuanceEndDate" name="issuanceEndDate" required>
+                    <div class="invalid-feedback">Выберите дату</div>
+                    <small class="form-text text-muted">Можно выбрать любую дату</small>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="foundationEndDate" class="form-label">Окончание срока основания</label>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="isPermanent" name="isPermanent"
+                               value="true" onchange="toggleFoundationEndDate()">
+                        <label class="form-check-label" for="isPermanent">
+                            <strong>Бессрочно</strong>
+                        </label>
+                    </div>
+                    <input type="date" class="form-control" id="foundationEndDate" name="foundationEndDate">
+                    <small class="form-text text-muted">Или отметьте "Бессрочно"</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- КНОПКИ ДЕЙСТВИЙ -->
+        <div class="d-flex gap-2 mb-5">
+            <button type="submit" class="btn btn-success btn-lg px-5">💾 Сохранить студента</button>
+            <button type="reset" class="btn btn-outline-secondary btn-lg">🔄 Очистить форму</button>
+            <a th:href="@{/students/show}" class="btn btn-outline-danger btn-lg ms-auto">❌ Отмена</a>
+        </div>
+
     </form>
 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function setCourseAndStudyForm() {
-    const selected = document.getElementById('courseStudyForm').value;
-    if (selected) {
-        const [studyFormId, course] = selected.split('-');
-        document.getElementById('hiddenStudyFormId').value = studyFormId;
-        document.getElementById('hiddenCourse').value = course;
-    } else {
-        // Если ничего не выбрано, ставим значения по умолчанию
-        document.getElementById('hiddenStudyFormId').value = '';
-        document.getElementById('hiddenCourse').value = '';
+    // Bootstrap валидация
+    (function () {
+        'use strict'
+        const forms = document.querySelectorAll('.needs-validation')
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+
+    // Динамические курсы в зависимости от факультета
+    function updateCourseOptions() {
+        const facultySelect = document.getElementById('facultyId');
+        const studyFormSelect = document.getElementById('studyFormId');
+        const courseSelect = document.getElementById('course');
+        const courseHint = document.getElementById('courseHint');
+
+        const selectedFacultyOption = facultySelect.options[facultySelect.selectedIndex];
+        const selectedStudyFormOption = studyFormSelect.options[studyFormSelect.selectedIndex];
+
+        const facultyName = selectedFacultyOption ? selectedFacultyOption.getAttribute('data-name') : '';
+        const studyFormName = selectedStudyFormOption ? selectedStudyFormOption.getAttribute('data-name') : '';
+
+        courseSelect.innerHTML = '';
+
+        if (!facultyName || !studyFormName) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.disabled = true;
+            option.selected = true;
+            option.textContent = 'Сначала выберите факультет и форму обучения';
+            courseSelect.appendChild(option);
+            courseHint.textContent = '';
+            return;
+        }
+
+        // Для колледжа - только номера курсов (1-4)
+        if (facultyName === 'Колледж') {
+            for (let i = 1; i <= 4; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i} курс`;
+                courseSelect.appendChild(option);
+            }
+            courseHint.textContent = '💡 Колледж: доступны курсы 1-4';
+        }
+        // Для бакалавриата
+        else if (studyFormName === 'Бакалавриат') {
+            for (let i = 1; i <= 5; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i} курс`;
+                courseSelect.appendChild(option);
+            }
+            courseHint.textContent = '💡 Бакалавриат: доступны курсы 1-5';
+        }
+        // Для магистратуры
+        else if (studyFormName === 'Магистратура') {
+            for (let i = 1; i <= 2; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i} курс (магистратура)`;
+                courseSelect.appendChild(option);
+            }
+            courseHint.textContent = '💡 Магистратура: доступны курсы 1-2';
+        }
+        // По умолчанию
+        else {
+            for (let i = 1; i <= 6; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i} курс`;
+                courseSelect.appendChild(option);
+            }
+            courseHint.textContent = '';
         }
     }
 
-    // Добавьте валидацию перед отправкой формы
-    document.getElementById('addStudentForm').addEventListener('submit', function(e) {
-        const course = document.getElementById('hiddenCourse').value;
-        const studyFormId = document.getElementById('hiddenStudyFormId').value;
-
-        if (!course || !studyFormId) {
-            e.preventDefault();
-            alert('Пожалуйста, выберите курс и форму обучения');
-            return false;
-        }
-    });
-
+    // Переключение поля "Окончание срока основания"
     function toggleFoundationEndDate() {
-        const isPermanent = document.getElementById('isPermanent').checked;
-        const foundationEndDate = document.getElementById('foundationEndDate');
+        const checkbox = document.getElementById('isPermanent');
+        const dateInput = document.getElementById('foundationEndDate');
 
-        if (isPermanent) {
-            foundationEndDate.value = '';
-            foundationEndDate.disabled = true;
-            foundationEndDate.removeAttribute('required');
+        if (checkbox.checked) {
+            dateInput.value = '';
+            dateInput.disabled = true;
+            dateInput.required = false;
         } else {
-            foundationEndDate.disabled = false;
-            foundationEndDate.setAttribute('required', 'required');
+            dateInput.disabled = false;
         }
     }
+
+    // УБРАЛИ УСТАНОВКУ MIN DATE - теперь можно выбирать любые даты
+    // document.addEventListener('DOMContentLoaded', function() {
+    //     const today = new Date().toISOString().split('T')[0];
+    //     document.getElementById('issuanceEndDate').setAttribute('min', today);
+    //     document.getElementById('foundationEndDate').setAttribute('min', today);
+    // });
 </script>
+
 </body>
 </html>

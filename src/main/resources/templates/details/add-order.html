@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${title}">Добавление приказа</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+  <style>
+    .form-section {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<div th:insert="~{blocks/header :: header}"></div>
+
+<div class="container mt-4">
+
+  <!-- BREADCRUMBS -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a th:href="@{/}">Главная</a></li>
+      <li class="breadcrumb-item"><a th:href="@{/students/show}">Список студентов</a></li>
+      <li class="breadcrumb-item"><a th:href="@{/students/details/{id}(id=${student.id})}" th:text="${student.fullName}">Студент</a></li>
+      <li class="breadcrumb-item active">Добавление приказа</li>
+    </ol>
+  </nav>
+
+  <!-- ✅ УВЕДОМЛЕНИЯ ОБ ОШИБКЕ (теперь будут показываться) -->
+  <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+    <strong>❌ Ошибка!</strong> <span th:text="${errorMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+
+  <!-- ✅ УВЕДОМЛЕНИЯ ОБ УСПЕХЕ -->
+  <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+    <strong>✅ Успешно!</strong> <span th:text="${successMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+
+  <!-- ЗАГОЛОВОК -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>➕ Добавление приказа (справки)</h1>
+    <a th:href="@{/students/details/{id}(id=${student.id})}" class="btn btn-outline-secondary">← Назад к студенту</a>
+  </div>
+
+  <!-- ИНФОРМАЦИЯ О СТУДЕНТЕ -->
+  <div class="alert alert-info">
+    <strong>Студент:</strong> <span th:text="${student.fullName}"></span> |
+    <strong>Текущий приказ:</strong> <code th:text="${student.orderNumber}"></code>
+  </div>
+
+  <!-- ФОРМА ДОБАВЛЕНИЯ ПРИКАЗА -->
+  <form th:action="@{/students/details/{id}/add-order(id=${student.id})}" method="post" class="needs-validation" novalidate>
+
+    <div class="form-section">
+      <h5 class="mb-3">📄 Данные приказа</h5>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="scholarshipId" class="form-label required-label">Тип стипендии</label>
+          <select class="form-select" id="scholarshipId" name="scholarshipId" required>
+            <option value="" selected disabled>Выберите стипендию</option>
+            <option th:each="scholarship : ${scholarships}" th:value="${scholarship.id}" th:text="${scholarship.name}"></option>
+          </select>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label for="foundationId" class="form-label required-label">Основание</label>
+          <select class="form-select" id="foundationId" name="foundationId" required>
+            <option value="" selected disabled>Выберите основание</option>
+            <option th:each="foundation : ${foundations}" th:value="${foundation.id}" th:text="${foundation.name}"></option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="orderNumber" class="form-label required-label">Номер приказа</label>
+          <input type="text" class="form-control" id="orderNumber" name="orderNumber" placeholder="Например: 3189-с" required>
+          <small class="text-muted">Можно использовать один номер для разных студентов</small>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label for="issuanceEndDate" class="form-label required-label">Дата окончания выдачи</label>
+          <input type="date" class="form-control" id="issuanceEndDate" name="issuanceEndDate" required>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label for="foundationEndDate" class="form-label">Окончание срока основания</label>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="isPermanent" name="isPermanent" value="true" onchange="toggleFoundationEndDate()">
+            <label class="form-check-label" for="isPermanent"><strong>Бессрочно</strong></label>
+          </div>
+          <input type="date" class="form-control" id="foundationEndDate" name="foundationEndDate">
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-success btn-lg px-5">💾 Сохранить приказ</button>
+      <a th:href="@{/students/details/{id}(id=${student.id})}" class="btn btn-outline-secondary btn-lg">Отмена</a>
+    </div>
+
+  </form>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function toggleFoundationEndDate() {
+      const checkbox = document.getElementById('isPermanent');
+      const dateInput = document.getElementById('foundationEndDate');
+      if (checkbox.checked) {
+          dateInput.value = '';
+          dateInput.disabled = true;
+      } else {
+          dateInput.disabled = false;
+      }
+  }
+</script>
+
+</body>
+</html>

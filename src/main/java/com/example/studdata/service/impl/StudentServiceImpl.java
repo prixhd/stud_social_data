@@ -4,6 +4,7 @@ import com.example.studdata.dao.*;
 import com.example.studdata.model.*;
 import com.example.studdata.service.StudentService;
 import com.example.studdata.util.ApplicationMetrics;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +23,8 @@ import java.util.Optional;
 public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository repository;
+    private final ScholarshipOrderRepository scholarshipOrderRepository;
     private final ApplicationMetrics applicationMetrics;
-
 
     @Autowired
     private FacultyRepository facultyRepository;
@@ -78,7 +78,6 @@ public class StudentServiceImpl implements StudentService {
         return studyFormRepository.findById(id).orElseThrow();
     }
 
-
     @Override
     @Transactional(readOnly = true)
     public List<Student> findAllStudent() {
@@ -90,13 +89,28 @@ public class StudentServiceImpl implements StudentService {
     @Transactional
     public Student saveStudent(Student student) {
         log.info("Сохранение студента: {} {}", student.getLastName(), student.getFirstName());
-
         validateStudent(student);
 
-        Student savedStudent = repository.save(student);
-        applicationMetrics.incrementStudentCreatedCounter();
+        boolean isNewStudent = (student.getId() == null);
 
-        log.info("Студент сохранен с ID: {}", savedStudent.getId());
+        if (student.getIsIndefinite() == null) {
+            student.setIsIndefinite(false);
+        }
+        if (student.getIsPermanent() == null) {
+            student.setIsPermanent(false);
+        }
+
+        Student savedStudent = repository.save(student);
+
+        if (isNewStudent) {
+            createInitialOrderForStudent(savedStudent);
+            applicationMetrics.incrementStudentCreatedCounter();
+            log.info("Студент сохранен с ID: {} и создан первичный приказ", savedStudent.getId());
+        } else {
+            applicationMetrics.incrementStudentUpdatedCounter();
+            log.info("Студент обновлен: {}", savedStudent.getId());
+        }
+
         return savedStudent;
     }
 
@@ -105,8 +119,8 @@ public class StudentServiceImpl implements StudentService {
     public Student updateStudent(Student student) {
         log.info("Обновление студента с ID: {}", student.getId());
 
-        if (!repository.existsById(student.getId())) {
-            throw new EntityNotFoundException("Студент с ID " + student.getId() + " не найден");
+        if (student.getId() == null) {
+            throw new IllegalArgumentException("ID студента не может быть null при обновлении");
         }
 
         validateStudent(student);
@@ -202,15 +216,9 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional(readOnly = true)
     public List<Student> findStudentsWithFoundationEndingInWeek(LocalDate startDate, LocalDate endDate) {
-        log.info("🔍 Поиск студентов с окончанием основания между {} и {}", startDate, endDate);
+        log.info("Поиск студентов с окончанием основания между {} и {}", startDate, endDate);
         List<Student> students = repository.findStudentsWithFoundationEndingInWeek(startDate, endDate);
-        log.info("📊 Найдено студентов: {}", students.size());
-
-        students.forEach(student ->
-                log.debug("👤 Студент: {} {}, дата окончания: {}, бессрочно: {}",
-                        student.getLastName(), student.getFirstName(),
-                        student.getFoundationEndDate(), student.getIsPermanent()));
-
+        log.info("Найдено студентов: {}", students.size());
         return students;
     }
 
@@ -261,15 +269,6 @@ public class StudentServiceImpl implements StudentService {
         return repository.countByFacultyId(facultyId);
     }
 
-//    @Override
-//    public boolean isOrderNumberUnique(String orderNumber, Long excludeId) {
-//        Optional<Student> existing = repository.findByOrderNumber(orderNumber);
-//        if (existing.isEmpty()) {
-//            return true;
-//        }
-//        return excludeId != null && existing.get().getId().equals(excludeId);
-//    }
-
     @Override
     public void validateStudent(Student student) {
         if (student.getFirstName() == null || student.getFirstName().trim().isEmpty()) {
@@ -284,9 +283,6 @@ public class StudentServiceImpl implements StudentService {
         if (student.getOrderNumber() == null || student.getOrderNumber().trim().isEmpty()) {
             throw new IllegalArgumentException("Номер приказа обязателен");
         }
-        // if (!isOrderNumberUnique(student.getOrderNumber(), student.getId())) {
-        //     throw new IllegalArgumentException("Номер приказа должен быть уникальным");
-        // }
         if (student.getIssuanceEndDate() == null) {
             throw new IllegalArgumentException("Дата окончания выдачи обязательна");
         }
@@ -301,6 +297,42 @@ public class StudentServiceImpl implements StudentService {
         }
         if (student.getFoundation() == null) {
             throw new IllegalArgumentException("Основание обязательно");
+        }
+    }
+
+    private void createInitialOrderForStudent(Student student) {
+        List<ScholarshipOrder> existingActiveOrders = scholarshipOrderRepository
+                .findActiveByStudentId(student.getId());
+
+        if (!existingActiveOrders.isEmpty()) {
+            log.warn("Студент ID: {} уже имеет {} активных приказов, пропускаем создание",
+                    student.getId(), existingActiveOrders.size());
+            return;
+        }
+
+        if (student.getOrderNumber() == null || student.getOrderNumber().trim().isEmpty()) {
+            log.warn("Номер приказа пустой, первичный приказ не создан");
+            return;
+        }
+
+        try {
+            ScholarshipOrder order = ScholarshipOrder.builder()
+                    .student(student)
+                    .scholarship(student.getScholarship())
+                    .foundation(student.getFoundation())
+                    .orderNumber(student.getOrderNumber())
+                    .issuanceEndDate(student.getIssuanceEndDate())
+                    .foundationEndDate(student.getFoundationEndDate())
+                    .isPermanent(student.getIsPermanent())
+                    .isActive(true)
+                    .createdDate(LocalDate.now())
+                    .build();
+
+            scholarshipOrderRepository.save(order);
+            log.info("✅ Создан первичный приказ '{}' для студента ID: {}",
+                    order.getOrderNumber(), student.getId());
+        } catch (Exception e) {
+            log.error("❌ Ошибка создания первичного приказа: {}", e.getMessage());
         }
     }
 }

@@ -4,7 +4,9 @@ import com.example.studdata.model.Foundation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface FoundationRepository extends JpaRepository<Foundation, Long> {
-    Foundation findByName(String foundationName);
+    Optional<Foundation> findByName(String name);
 }

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${title}">Редактирование приказа</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:insert="~{blocks/header :: header}"></div>
+
+<div class="container mt-5">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>✏️ Редактирование приказа</h1>
+    <a th:href="@{/students/details/{id}(id=${student.id})}" class="btn btn-secondary">← Назад</a>
+  </div>
+
+  <!-- ИНФОРМАЦИЯ О СТУДЕНТЕ -->
+  <div class="alert alert-info">
+    <strong>Студент:</strong> <span th:text="${student.lastName + ' ' + student.firstName + ' ' + (student.middleName != null ? student.middleName : '')}">Иванов Иван Иванович</span><br>
+    <strong>Факультет:</strong> <span th:text="${student.faculty?.name}">Физический</span>,
+    <strong>Курс:</strong> <span th:text="${student.course}">2</span>
+  </div>
+
+  <!-- ПРЕДУПРЕЖДЕНИЕ ДЛЯ АКТИВНОГО ПРИКАЗА -->
+  <div th:if="${order.isActive}" class="alert alert-warning">
+    <strong>⚠️ Внимание!</strong> Вы редактируете активный приказ. Изменения будут применены к текущим данным студента.
+  </div>
+
+  <!-- ФОРМА РЕДАКТИРОВАНИЯ ПРИКАЗА -->
+  <form th:action="@{/students/details/{studentId}/order/{orderId}/edit(studentId=${student.id}, orderId=${order.id})}"
+        method="post"
+        class="needs-validation"
+        novalidate>
+
+    <input type="hidden" name="returnUrl" th:value="${returnUrl}">
+    <!-- ✅ ИСПРАВЛЕНИЕ: Сохраняем текущий статус активности приказа, чтобы не сбрасывался на true -->
+    <input type="hidden" name="isActive" th:value="${order.isActive}">
+
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Данные приказа</h5>
+      </div>
+      <div class="card-body">
+
+        <!-- Стипендия -->
+        <div class="mb-3">
+          <label for="scholarshipId" class="form-label">Стипендия <span class="text-danger">*</span></label>
+          <select class="form-select" id="scholarshipId" name="scholarshipId" required>
+            <option value="" disabled>Выберите стипендию</option>
+            <option th:each="scholarship : ${scholarships}"
+                    th:value="${scholarship.id}"
+                    th:text="${scholarship.name}"
+                    th:selected="${scholarship.id == order.scholarship?.id}">
+            </option>
+          </select>
+          <div class="invalid-feedback">Выберите стипендию</div>
+        </div>
+
+        <!-- Основание -->
+        <div class="mb-3">
+          <label for="foundationId" class="form-label">Основание <span class="text-danger">*</span></label>
+          <select class="form-select" id="foundationId" name="foundationId" required>
+            <option value="" disabled>Выберите основание</option>
+            <option th:each="foundation : ${foundations}"
+                    th:value="${foundation.id}"
+                    th:text="${foundation.name}"
+                    th:selected="${foundation.id == order.foundation?.id}">
+            </option>
+          </select>
+          <div class="invalid-feedback">Выберите основание</div>
+        </div>
+
+        <!-- Номер приказа -->
+        <div class="mb-3">
+          <label for="orderNumber" class="form-label">Номер приказа <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="orderNumber" name="orderNumber"
+                 th:value="${order.orderNumber}"
+                 placeholder="Например: 3189-с" required>
+          <div class="invalid-feedback">Введите номер приказа</div>
+        </div>
+
+        <!-- Дата окончания выдачи -->
+        <div class="mb-3">
+          <label for="issuanceEndDate" class="form-label">Дата окончания выдачи <span class="text-danger">*</span></label>
+          <input type="date" class="form-control" id="issuanceEndDate" name="issuanceEndDate"
+                 th:value="${order.issuanceEndDate}"
+                 required>
+          <div class="invalid-feedback">Выберите дату</div>
+          <small class="form-text text-muted">Можно выбрать любую дату (включая прошлые)</small>
+        </div>
+
+        <!-- Окончание срока основания -->
+        <div class="mb-3">
+          <label for="foundationEndDate" class="form-label">Окончание срока основания</label>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="isPermanent" name="isPermanent"
+                   value="true"
+                   th:checked="${order.isPermanent}"
+                   onchange="toggleFoundationEndDate()">
+            <label class="form-check-label" for="isPermanent">
+              <strong>Бессрочно</strong>
+            </label>
+          </div>
+          <input type="date" class="form-control" id="foundationEndDate" name="foundationEndDate"
+                 th:value="${order.foundationEndDate}"
+                 th:disabled="${order.isPermanent}">
+          <small class="form-text text-muted">Оставьте пустым или отметьте "Бессрочно", если срок не ограничен</small>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-success btn-lg">💾 Сохранить изменения</button>
+      <a th:href="@{/students/details/{id}(id=${student.id})}" class="btn btn-outline-secondary btn-lg">Отмена</a>
+    </div>
+
+  </form>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Валидация формы Bootstrap
+  (function () {
+      'use strict'
+      const forms = document.querySelectorAll('.needs-validation')
+      Array.from(forms).forEach(form => {
+          form.addEventListener('submit', event => {
+              if (!form.checkValidity()) {
+                  event.preventDefault()
+                  event.stopPropagation()
+              }
+              form.classList.add('was-validated')
+          }, false)
+      })
+  })()
+
+  // Переключение поля даты при выборе "Бессрочно"
+  function toggleFoundationEndDate() {
+      const checkbox = document.getElementById('isPermanent');
+      const dateInput = document.getElementById('foundationEndDate');
+
+      if (checkbox.checked) {
+          dateInput.value = '';
+          dateInput.disabled = true;
+          dateInput.required = false;
+      } else {
+          dateInput.disabled = false;
+      }
+  }
+</script>
+
+</body>
+</html>
