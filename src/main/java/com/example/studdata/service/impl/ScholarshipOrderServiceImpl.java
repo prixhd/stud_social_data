@@ -1,6 +1,7 @@
 package com.example.studdata.service.impl;
 
 import com.example.studdata.dao.ScholarshipOrderRepository;
+import com.example.studdata.dao.StudentRepository;
 import com.example.studdata.model.ScholarshipOrder;
 import com.example.studdata.model.Student;
 import com.example.studdata.service.ScholarshipOrderService;
@@ -22,20 +23,33 @@ public class ScholarshipOrderServiceImpl implements ScholarshipOrderService {
 
     private final ScholarshipOrderRepository repository;
 
+    private final StudentRepository studentRepository;
+
     @Override
     @Transactional
     public ScholarshipOrder createOrder(ScholarshipOrder order) {
-        log.info("Создание нового приказа для студента ID: {}", order.getStudent().getId());
 
         validateOrder(order);
 
-        // Деактивируем все предыдущие приказы студента
-        deactivateAllByStudentId(order.getStudent().getId());
+        Long studentId = order.getStudent().getId();
+
+        log.info(
+                "Создание нового приказа для студента ID: {}",
+                studentId
+        );
+
+        deactivateAllByStudentId(studentId);
 
         order.setIsActive(true);
-        ScholarshipOrder saved = repository.save(order);
 
-        log.info("Приказ создан с ID: {}", saved.getId());
+        ScholarshipOrder saved =
+                repository.save(order);
+
+        log.info(
+                "Приказ создан с ID: {}",
+                saved.getId()
+        );
+
         return saved;
     }
 
@@ -170,35 +184,82 @@ public class ScholarshipOrderServiceImpl implements ScholarshipOrderService {
 
 
 
-    // ✅ ДОБАВИТЬ НОВЫЙ МЕТОД для активации приказа:
     @Override
     @Transactional
     public void activateOrder(Long orderId) {
-        log.info("Активация приказа ID: {}", orderId);
 
-        ScholarshipOrder order = repository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("Приказ с ID " + orderId + " не найден"));
+        log.info(
+                "Активация приказа ID: {}",
+                orderId
+        );
+
+        ScholarshipOrder order =
+                repository.findById(orderId)
+                        .orElseThrow(
+                                () -> new EntityNotFoundException(
+                                        "Приказ с ID "
+                                                + orderId
+                                                + " не найден"
+                                )
+                        );
 
         Student student = order.getStudent();
 
-        // Деактивируем все текущие приказы студента
-        List<ScholarshipOrder> activeOrders = repository.findActiveByStudentId(student.getId());
-        activeOrders.forEach(o -> o.setIsActive(false));
+        if (student == null) {
+            throw new IllegalStateException(
+                    "Приказ не связан со студентом"
+            );
+        }
+
+        List<ScholarshipOrder> activeOrders =
+                repository.findActiveByStudentId(
+                        student.getId()
+                );
+
+        activeOrders.forEach(
+                activeOrder ->
+                        activeOrder.setIsActive(false)
+        );
+
         repository.saveAll(activeOrders);
 
-        // Активируем выбранный
         order.setIsActive(true);
         repository.save(order);
 
-        // Обновляем текущие данные студента в основной таблице
-        student.setScholarship(order.getScholarship());
-        student.setFoundation(order.getFoundation());
-        student.setOrderNumber(order.getOrderNumber());
-        student.setIssuanceEndDate(order.getIssuanceEndDate());
-        student.setFoundationEndDate(order.getFoundationEndDate());
-        student.setIsPermanent(order.getIsPermanent());
+        /*
+         * Синхронизируем текущие данные Student
+         * с активированным приказом.
+         */
+        student.setScholarship(
+                order.getScholarship()
+        );
 
-        // Сохраняем студента (вам нужно внедрить StudentRepository или использовать сервис)
-        // Если нет доступа к StudentRepository здесь, уберите эти строки и обновляйте только в контроллере
+        student.setFoundation(
+                order.getFoundation()
+        );
+
+        student.setOrderNumber(
+                order.getOrderNumber()
+        );
+
+        student.setIssuanceEndDate(
+                order.getIssuanceEndDate()
+        );
+
+        student.setFoundationEndDate(
+                order.getFoundationEndDate()
+        );
+
+        student.setIsPermanent(
+                order.getIsPermanent()
+        );
+
+        studentRepository.save(student);
+
+        log.info(
+                "Приказ ID: {} активирован для студента ID: {}",
+                orderId,
+                student.getId()
+        );
     }
 }
