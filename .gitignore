@@ -3,3 +3,6 @@ target/
 *.jar
 *.class
 .DS_Store
+logs/
+*.log
+cookies*.txt
