@@ -174,8 +174,7 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <configuration>
                     <url>jdbc:mysql://localhost:3306/studdata</url>
-                    <user>root</user>
-                    <password>prixhd565677*</password>
+
                 </configuration>
             </plugin>
         </plugins>
