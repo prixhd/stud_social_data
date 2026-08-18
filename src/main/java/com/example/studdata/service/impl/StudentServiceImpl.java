@@ -436,6 +436,24 @@ public class StudentServiceImpl implements StudentService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public StudentStatistics getStatistics(
+            LocalDate currentDate,
+            LocalDate expirationDate
+    ) {
+        log.debug(
+                "Получение агрегированной статистики студентов: {} - {}",
+                currentDate,
+                expirationDate
+        );
+
+        return repository.getStatistics(
+                currentDate,
+                expirationDate
+        );
+    }
+
     private void createInitialOrderForStudent(Student student) {
 
         List<ScholarshipOrder> existingActiveOrders =

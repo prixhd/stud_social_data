@@ -47,6 +47,55 @@ public interface StudentRepository extends JpaRepository<Student, Long>,
             "s.foundationEndDate <= :currentDate")
     List<Student> findStudentsByFoundationEndDateBeforeOrEqual(@Param("currentDate") LocalDate currentDate);
 
+
+    @Query("""
+    SELECT
+        COUNT(s) AS total,
+
+        SUM(
+            CASE
+                WHEN s.isPermanent = true
+                     OR s.isIndefinite = true
+                     OR (
+                         s.foundationEndDate IS NOT NULL
+                         AND s.foundationEndDate > :currentDate
+                     )
+                THEN 1
+                ELSE 0
+            END
+        ) AS active,
+
+        SUM(
+            CASE
+                WHEN (s.isPermanent = false OR s.isPermanent IS NULL)
+                     AND (s.isIndefinite = false OR s.isIndefinite IS NULL)
+                     AND s.foundationEndDate IS NOT NULL
+                     AND s.foundationEndDate < :currentDate
+                THEN 1
+                ELSE 0
+            END
+        ) AS expired,
+
+        SUM(
+            CASE
+                WHEN (s.isPermanent = false OR s.isPermanent IS NULL)
+                     AND (s.isIndefinite = false OR s.isIndefinite IS NULL)
+                     AND s.foundationEndDate IS NOT NULL
+                     AND s.foundationEndDate > :currentDate
+                     AND s.foundationEndDate < :expirationDate
+                THEN 1
+                ELSE 0
+            END
+        ) AS expiring
+
+    FROM Student s
+    """)
+    StudentStatistics getStatistics(
+            @Param("currentDate") LocalDate currentDate,
+            @Param("expirationDate") LocalDate expirationDate
+    );
+
+
     /**
      * Студенты с окончанием срока основания в определенный период
      */

@@ -1,5 +1,6 @@
 package com.example.studdata.service;
 
+import com.example.studdata.dao.StudentStatistics;
 import com.example.studdata.model.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -75,4 +76,9 @@ public interface StudentService {
     Scholarship findScholarshipById(Long id);
     Foundation findFoundationById(Long id);
     StudyForm findStudyFormById(Long id);
+
+    StudentStatistics getStatistics(
+            LocalDate currentDate,
+            LocalDate expirationDate
+    );
 }
