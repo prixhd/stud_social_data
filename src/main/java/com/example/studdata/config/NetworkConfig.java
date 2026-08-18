@@ -26,7 +26,6 @@ public class NetworkConfig implements ApplicationListener<ApplicationReadyEvent>
             log.info("🌐 Приложение запущено и доступно по адресам:");
             log.info("🏠 Локальный доступ: http://localhost:{}", serverPort);
             log.info("📱 Доступ из локальной сети: http://{}:{}", localIP, serverPort);
-            log.info("📋 Логин: admin, Пароль: admin");
             log.info("=" .repeat(60));
         } catch (Exception e) {
             log.error("Ошибка при получении IP адреса: {}", e.getMessage());

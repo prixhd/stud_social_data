@@ -1,5 +1,6 @@
 package com.example.studdata.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,25 +17,37 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class WebSecurityConfig {
 
+    @Value("${app.security.admin.username}")
+    private String adminUsername;
+
+    @Value("${app.security.admin.password}")
+    private String adminPassword;
+
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http
+    ) throws Exception {
+
         http
-                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/css/**",
                                 "/js/**",
-                                "/images/**",
-                                "/actuator/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/images/**"
                         ).permitAll()
+
+                        .requestMatchers(
+                                "/actuator/health"
+                        ).permitAll()
+
                         .anyRequest().authenticated()
                 )
+
                 .formLogin(form -> form
                         .defaultSuccessUrl("/", true)
                         .permitAll()
                 )
+
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login")
                         .permitAll()
@@ -44,10 +57,15 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
+    public UserDetailsService userDetailsService(
+            PasswordEncoder passwordEncoder
+    ) {
+
         UserDetails admin = User.builder()
-                .username("admin")
-                .password(passwordEncoder().encode("admin"))
+                .username(adminUsername)
+                .password(
+                        passwordEncoder.encode(adminPassword)
+                )
                 .roles("ADMIN")
                 .build();
 
