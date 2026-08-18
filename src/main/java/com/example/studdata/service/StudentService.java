@@ -1,6 +1,8 @@
 package com.example.studdata.service;
 
 import com.example.studdata.model.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -12,6 +14,10 @@ public interface StudentService {
 
     // Основные CRUD операции
     List<Student> findAllStudent();
+
+    // Постраничное получение студентов
+    Page<Student> findAll(Pageable pageable);
+
     Student saveStudent(Student student);
     Student updateStudent(Student student);
     void deleteStudent(Student student);
@@ -23,8 +29,16 @@ public interface StudentService {
     // Поиск и фильтрация
     List<Student> findStudentsByIds(List<Long> ids);
     List<Student> findStudentsByNameOrOrderNumber(String searchTerm);
+
     List<Student> findAll(Specification<Student> spec, Sort sort);
     List<Student> findAll(Specification<Student> spec);
+
+    // Постраничная фильтрация
+    Page<Student> findAll(
+            Specification<Student> spec,
+            Pageable pageable
+    );
+
     List<Student> findByFacultyId(Long facultyId);
     List<Student> findByCourse(int course);
     Optional<Student> findByOrderNumber(String orderNumber);
@@ -32,10 +46,18 @@ public interface StudentService {
     // Поиск по датам
     List<Student> findStudentsByIssuanceEndDateAfter(LocalDate currentDate);
     List<Student> findStudentsByIssuanceEndDateBeforeOrEqual(LocalDate currentDate);
-    List<Student> findStudentsWithFoundationEndingInWeek(LocalDate startDate, LocalDate endDate);
+    List<Student> findStudentsWithFoundationEndingInWeek(
+            LocalDate startDate,
+            LocalDate endDate
+    );
     List<Student> findPermanentStudents();
-    List<Student> findByCreatedDateBetween(LocalDate startDate, LocalDate endDate);
-    List<Student> findStudentsByFoundationEndDateBeforeOrEqual(LocalDate currentDate);
+    List<Student> findByCreatedDateBetween(
+            LocalDate startDate,
+            LocalDate endDate
+    );
+    List<Student> findStudentsByFoundationEndDateBeforeOrEqual(
+            LocalDate currentDate
+    );
 
     // Статистика
     long countByFacultyId(Long facultyId);
@@ -43,7 +65,7 @@ public interface StudentService {
     // Валидация
     void validateStudent(Student student);
 
-    // Методы для получения справочников
+    // Справочники
     List<Faculty> findAllFaculties();
     List<Scholarship> findAllScholarships();
     List<Foundation> findAllFoundations();

@@ -8,6 +8,8 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -86,16 +88,34 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<Student> findAll(Pageable pageable) {
+        log.debug(
+                "Постраничный поиск студентов: page={}, size={}",
+                pageable.getPageNumber(),
+                pageable.getPageSize()
+        );
+
+        return repository.findAll(pageable);
+    }
+
+    @Override
     @Transactional
     public Student saveStudent(Student student) {
-        log.info("Сохранение студента: {} {}", student.getLastName(), student.getFirstName());
+        log.info(
+                "Сохранение студента: {} {}",
+                student.getLastName(),
+                student.getFirstName()
+        );
+
         validateStudent(student);
 
-        boolean isNewStudent = (student.getId() == null);
+        boolean isNewStudent = student.getId() == null;
 
         if (student.getIsIndefinite() == null) {
             student.setIsIndefinite(false);
         }
+
         if (student.getIsPermanent() == null) {
             student.setIsPermanent(false);
         }
@@ -105,7 +125,11 @@ public class StudentServiceImpl implements StudentService {
         if (isNewStudent) {
             createInitialOrderForStudent(savedStudent);
             applicationMetrics.incrementStudentCreatedCounter();
-            log.info("Студент сохранен с ID: {} и создан первичный приказ", savedStudent.getId());
+
+            log.info(
+                    "Студент сохранен с ID: {} и создан первичный приказ",
+                    savedStudent.getId()
+            );
         } else {
             applicationMetrics.incrementStudentUpdatedCounter();
             log.info("Студент обновлен: {}", savedStudent.getId());
@@ -120,7 +144,9 @@ public class StudentServiceImpl implements StudentService {
         log.info("Обновление студента с ID: {}", student.getId());
 
         if (student.getId() == null) {
-            throw new IllegalArgumentException("ID студента не может быть null при обновлении");
+            throw new IllegalArgumentException(
+                    "ID студента не может быть null при обновлении"
+            );
         }
 
         validateStudent(student);
@@ -129,20 +155,34 @@ public class StudentServiceImpl implements StudentService {
         applicationMetrics.incrementStudentUpdatedCounter();
 
         log.info("Студент обновлен: {}", updatedStudent.getId());
+
         return updatedStudent;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Student> findStudentsByFoundationEndDateBeforeOrEqual(LocalDate currentDate) {
-        log.debug("Поиск студентов с истекшим сроком основания до: {}", currentDate);
-        return repository.findStudentsByFoundationEndDateBeforeOrEqual(currentDate);
+    public List<Student> findStudentsByFoundationEndDateBeforeOrEqual(
+            LocalDate currentDate
+    ) {
+        log.debug(
+                "Поиск студентов с истекшим сроком основания до: {}",
+                currentDate
+        );
+
+        return repository.findStudentsByFoundationEndDateBeforeOrEqual(
+                currentDate
+        );
     }
 
     @Override
     @Transactional
     public void deleteStudent(Student student) {
-        log.info("Удаление студента: {} {}", student.getLastName(), student.getFirstName());
+        log.info(
+                "Удаление студента: {} {}",
+                student.getLastName(),
+                student.getFirstName()
+        );
+
         repository.delete(student);
         applicationMetrics.incrementStudentDeletedCounter();
     }
@@ -153,7 +193,9 @@ public class StudentServiceImpl implements StudentService {
         log.info("Удаление студента по ID: {}", id);
 
         if (!repository.existsById(id)) {
-            throw new EntityNotFoundException("Студент с ID " + id + " не найден");
+            throw new EntityNotFoundException(
+                    "Студент с ID " + id + " не найден"
+            );
         }
 
         repository.deleteById(id);
@@ -182,14 +224,23 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Student> findStudentsByNameOrOrderNumber(String searchTerm) {
-        log.debug("Поиск студентов по ФИО или номеру приказа: {}", searchTerm);
+    public List<Student> findStudentsByNameOrOrderNumber(
+            String searchTerm
+    ) {
+        log.debug(
+                "Поиск студентов по ФИО или номеру приказа: {}",
+                searchTerm
+        );
+
         return repository.findStudentsByNameOrOrderNumber(searchTerm);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Student> findAll(Specification<Student> spec, Sort sort) {
+    public List<Student> findAll(
+            Specification<Student> spec,
+            Sort sort
+    ) {
         return repository.findAll(spec, sort);
     }
 
@@ -201,24 +252,67 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Student> findStudentsByIssuanceEndDateAfter(LocalDate currentDate) {
-        log.debug("Поиск студентов с датой окончания после: {}", currentDate);
+    public Page<Student> findAll(
+            Specification<Student> spec,
+            Pageable pageable
+    ) {
+        log.debug(
+                "Постраничная фильтрация студентов: page={}, size={}",
+                pageable.getPageNumber(),
+                pageable.getPageSize()
+        );
+
+        return repository.findAll(spec, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Student> findStudentsByIssuanceEndDateAfter(
+            LocalDate currentDate
+    ) {
+        log.debug(
+                "Поиск студентов с датой окончания после: {}",
+                currentDate
+        );
+
         return repository.findStudentsByIssuanceEndDateAfter(currentDate);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Student> findStudentsByIssuanceEndDateBeforeOrEqual(LocalDate currentDate) {
-        log.debug("Поиск студентов с истекшим сроком до: {}", currentDate);
-        return repository.findStudentsByIssuanceEndDateBeforeOrEqual(currentDate);
+    public List<Student> findStudentsByIssuanceEndDateBeforeOrEqual(
+            LocalDate currentDate
+    ) {
+        log.debug(
+                "Поиск студентов с истекшим сроком до: {}",
+                currentDate
+        );
+
+        return repository.findStudentsByIssuanceEndDateBeforeOrEqual(
+                currentDate
+        );
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Student> findStudentsWithFoundationEndingInWeek(LocalDate startDate, LocalDate endDate) {
-        log.info("Поиск студентов с окончанием основания между {} и {}", startDate, endDate);
-        List<Student> students = repository.findStudentsWithFoundationEndingInWeek(startDate, endDate);
+    public List<Student> findStudentsWithFoundationEndingInWeek(
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        log.info(
+                "Поиск студентов с окончанием основания между {} и {}",
+                startDate,
+                endDate
+        );
+
+        List<Student> students =
+                repository.findStudentsWithFoundationEndingInWeek(
+                        startDate,
+                        endDate
+                );
+
         log.info("Найдено студентов: {}", students.size());
+
         return students;
     }
 
@@ -246,14 +340,26 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional(readOnly = true)
     public Optional<Student> findByOrderNumber(String orderNumber) {
-        log.debug("Поиск студента по номеру приказа: {}", orderNumber);
+        log.debug(
+                "Поиск студента по номеру приказа: {}",
+                orderNumber
+        );
+
         return repository.findByOrderNumber(orderNumber);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Student> findByCreatedDateBetween(LocalDate startDate, LocalDate endDate) {
-        log.debug("Поиск студентов, созданных между {} и {}", startDate, endDate);
+    public List<Student> findByCreatedDateBetween(
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        log.debug(
+                "Поиск студентов, созданных между {} и {}",
+                startDate,
+                endDate
+        );
+
         return repository.findByCreatedDateBetween(startDate, endDate);
     }
 
@@ -271,47 +377,86 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public void validateStudent(Student student) {
-        if (student.getFirstName() == null || student.getFirstName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Имя студента обязательно");
+
+        if (student.getFirstName() == null
+                || student.getFirstName().trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Имя студента обязательно"
+            );
         }
-        if (student.getLastName() == null || student.getLastName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Фамилия студента обязательна");
+
+        if (student.getLastName() == null
+                || student.getLastName().trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Фамилия студента обязательна"
+            );
         }
+
         if (student.getCourse() < 1 || student.getCourse() > 6) {
-            throw new IllegalArgumentException("Курс должен быть от 1 до 6");
+            throw new IllegalArgumentException(
+                    "Курс должен быть от 1 до 6"
+            );
         }
-        if (student.getOrderNumber() == null || student.getOrderNumber().trim().isEmpty()) {
-            throw new IllegalArgumentException("Номер приказа обязателен");
+
+        if (student.getOrderNumber() == null
+                || student.getOrderNumber().trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Номер приказа обязателен"
+            );
         }
+
         if (student.getIssuanceEndDate() == null) {
-            throw new IllegalArgumentException("Дата окончания выдачи обязательна");
+            throw new IllegalArgumentException(
+                    "Дата окончания выдачи обязательна"
+            );
         }
+
         if (student.getFaculty() == null) {
-            throw new IllegalArgumentException("Факультет обязателен");
+            throw new IllegalArgumentException(
+                    "Факультет обязателен"
+            );
         }
+
         if (student.getStudyForm() == null) {
-            throw new IllegalArgumentException("Форма обучения обязательна");
+            throw new IllegalArgumentException(
+                    "Форма обучения обязательна"
+            );
         }
+
         if (student.getScholarship() == null) {
-            throw new IllegalArgumentException("Стипендия обязательна");
+            throw new IllegalArgumentException(
+                    "Стипендия обязательна"
+            );
         }
+
         if (student.getFoundation() == null) {
-            throw new IllegalArgumentException("Основание обязательно");
+            throw new IllegalArgumentException(
+                    "Основание обязательно"
+            );
         }
     }
 
     private void createInitialOrderForStudent(Student student) {
-        List<ScholarshipOrder> existingActiveOrders = scholarshipOrderRepository
-                .findActiveByStudentId(student.getId());
+
+        List<ScholarshipOrder> existingActiveOrders =
+                scholarshipOrderRepository.findActiveByStudentId(
+                        student.getId()
+                );
 
         if (!existingActiveOrders.isEmpty()) {
-            log.warn("Студент ID: {} уже имеет {} активных приказов, пропускаем создание",
-                    student.getId(), existingActiveOrders.size());
+            log.warn(
+                    "Студент ID: {} уже имеет {} активных приказов, пропускаем создание",
+                    student.getId(),
+                    existingActiveOrders.size()
+            );
             return;
         }
 
-        if (student.getOrderNumber() == null || student.getOrderNumber().trim().isEmpty()) {
-            log.warn("Номер приказа пустой, первичный приказ не создан");
+        if (student.getOrderNumber() == null
+                || student.getOrderNumber().trim().isEmpty()) {
+            log.warn(
+                    "Номер приказа пустой, первичный приказ не создан"
+            );
             return;
         }
 
@@ -329,10 +474,18 @@ public class StudentServiceImpl implements StudentService {
                     .build();
 
             scholarshipOrderRepository.save(order);
-            log.info("✅ Создан первичный приказ '{}' для студента ID: {}",
-                    order.getOrderNumber(), student.getId());
+
+            log.info(
+                    "Создан первичный приказ '{}' для студента ID: {}",
+                    order.getOrderNumber(),
+                    student.getId()
+            );
+
         } catch (Exception e) {
-            log.error("❌ Ошибка создания первичного приказа: {}", e.getMessage());
+            log.error(
+                    "Ошибка создания первичного приказа: {}",
+                    e.getMessage()
+            );
         }
     }
 }

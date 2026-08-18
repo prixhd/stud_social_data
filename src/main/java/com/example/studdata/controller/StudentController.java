@@ -17,6 +17,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
 import java.io.File;
 import java.time.LocalDate;
 import java.util.List;
@@ -35,12 +40,27 @@ public class StudentController {
      * Показать всех студентов
      */
     @GetMapping("/show")
-    public String findAllStudents(Model model) {
-        List<Student> students = studentService.findAllStudent();
+    public String findAllStudents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            Model model) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Student> studentPage = studentService.findAll(pageable);
 
         addCommonAttributes(model, "Список студентов в БД");
-        model.addAttribute("students", students);
+
+        model.addAttribute("students", studentPage.getContent());
+        model.addAttribute("currentPage", studentPage.getNumber());
+        model.addAttribute("totalPages", studentPage.getTotalPages());
+        model.addAttribute("totalStudents", studentPage.getTotalElements());
+        model.addAttribute("pageSize", studentPage.getSize());
+
+        model.addAttribute("isFiltered", false);
         model.addAttribute("pageActiveShow", "nav-link active");
+        model.addAttribute("paginationMode", "all");
+
         clearFilterAttributes(model);
 
         return "show/students-show";
@@ -227,78 +247,204 @@ public class StudentController {
      * Фильтрация студентов
      */
     @GetMapping("show/filter")
-    public String filterStudents(@RequestParam(value = "faculty", required = false) Optional<Long> facultyId,
-                                 @RequestParam(value = "scholarship", required = false) Optional<Long> scholarshipId,
-                                 @RequestParam(value = "studyForm", required = false) Optional<Long> studyFormId,
-                                 @RequestParam(value = "foundation", required = false) Optional<Long> foundationId,
-                                 @RequestParam(value = "course", required = false) Optional<Integer> course,
-                                 @RequestParam(value = "sortColumn", required = false) String sortColumn,
-                                 @RequestParam(value = "sortDirection", required = false) String sortDirection,
-                                 Model model) {
+    public String filterStudents(
+            @RequestParam(value = "faculty", required = false)
+            Optional<Long> facultyId,
+
+            @RequestParam(value = "scholarship", required = false)
+            Optional<Long> scholarshipId,
+
+            @RequestParam(value = "studyForm", required = false)
+            Optional<Long> studyFormId,
+
+            @RequestParam(value = "foundation", required = false)
+            Optional<Long> foundationId,
+
+            @RequestParam(value = "course", required = false)
+            Optional<Integer> course,
+
+            @RequestParam(value = "sortColumn", required = false)
+            String sortColumn,
+
+            @RequestParam(value = "sortDirection", required = false)
+            String sortDirection,
+
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "50")
+            int size,
+
+            Model model) {
 
         Specification<Student> spec = Specification.where(null);
 
         if (facultyId.isPresent()) {
-            Faculty faculty = studentService.findFacultyById(facultyId.get());
+            Faculty faculty = studentService.findFacultyById(
+                    facultyId.get()
+            );
+
             if (faculty != null) {
-                spec = spec.and((root, query, criteriaBuilder) ->
-                        criteriaBuilder.equal(root.get("faculty"), faculty));
+                spec = spec.and(
+                        (root, query, criteriaBuilder) ->
+                                criteriaBuilder.equal(
+                                        root.get("faculty"),
+                                        faculty
+                                )
+                );
             }
         }
 
         if (scholarshipId.isPresent()) {
-            Scholarship scholarship = studentService.findScholarshipById(scholarshipId.get());
+            Scholarship scholarship =
+                    studentService.findScholarshipById(
+                            scholarshipId.get()
+                    );
+
             if (scholarship != null) {
-                spec = spec.and((root, query, criteriaBuilder) ->
-                        criteriaBuilder.equal(root.get("scholarship"), scholarship));
+                spec = spec.and(
+                        (root, query, criteriaBuilder) ->
+                                criteriaBuilder.equal(
+                                        root.get("scholarship"),
+                                        scholarship
+                                )
+                );
             }
         }
 
         if (studyFormId.isPresent()) {
-            StudyForm studyForm = studentService.findStudyFormById(studyFormId.get());
+            StudyForm studyForm =
+                    studentService.findStudyFormById(
+                            studyFormId.get()
+                    );
+
             if (studyForm != null) {
-                spec = spec.and((root, query, criteriaBuilder) ->
-                        criteriaBuilder.equal(root.get("studyForm"), studyForm));
+                spec = spec.and(
+                        (root, query, criteriaBuilder) ->
+                                criteriaBuilder.equal(
+                                        root.get("studyForm"),
+                                        studyForm
+                                )
+                );
             }
         }
 
         if (foundationId.isPresent()) {
-            Foundation foundation = studentService.findFoundationById(foundationId.get());
+            Foundation foundation =
+                    studentService.findFoundationById(
+                            foundationId.get()
+                    );
+
             if (foundation != null) {
-                spec = spec.and((root, query, criteriaBuilder) ->
-                        criteriaBuilder.equal(root.get("foundation"), foundation));
+                spec = spec.and(
+                        (root, query, criteriaBuilder) ->
+                                criteriaBuilder.equal(
+                                        root.get("foundation"),
+                                        foundation
+                                )
+                );
             }
         }
 
         if (course.isPresent()) {
-            spec = spec.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.equal(root.get("course"), course.get()));
+            spec = spec.and(
+                    (root, query, criteriaBuilder) ->
+                            criteriaBuilder.equal(
+                                    root.get("course"),
+                                    course.get()
+                            )
+            );
         }
 
-        Sort sort = null;
-        if (sortColumn != null && sortDirection != null && !sortColumn.isEmpty() && !sortDirection.isEmpty()) {
-            sort = Sort.by(Sort.Direction.fromString(sortDirection), sortColumn);
+        Sort sort = Sort.unsorted();
+
+        if (sortColumn != null
+                && !sortColumn.isEmpty()
+                && sortDirection != null
+                && !sortDirection.isEmpty()) {
+
+            sort = Sort.by(
+                    Sort.Direction.fromString(sortDirection),
+                    sortColumn
+            );
         }
 
-        List<Student> students;
-        if (sort != null) {
-            students = studentService.findAll(spec, sort);
-        } else {
-            students = studentService.findAll(spec);
-        }
+        Pageable pageable = PageRequest.of(page, size, sort);
 
-        addCommonAttributes(model, "Список студентов в БД");
-        model.addAttribute("students", students);
+        Page<Student> studentPage =
+                studentService.findAll(spec, pageable);
+
+        addCommonAttributes(
+                model,
+                "Список студентов в БД"
+        );
+
+        model.addAttribute(
+                "students",
+                studentPage.getContent()
+        );
+
+        model.addAttribute(
+                "currentPage",
+                studentPage.getNumber()
+        );
+
+        model.addAttribute(
+                "totalPages",
+                studentPage.getTotalPages()
+        );
+
+        model.addAttribute(
+                "totalStudents",
+                studentPage.getTotalElements()
+        );
+
+        model.addAttribute(
+                "pageSize",
+                studentPage.getSize()
+        );
+
+        model.addAttribute("isFiltered", true);
         model.addAttribute("pageActiveShow", "nav-link active");
 
-        // Сохраняем примененные фильтры
-        model.addAttribute("appliedFaculty", facultyId.map(String::valueOf).orElse(""));
-        model.addAttribute("appliedScholarship", scholarshipId.map(String::valueOf).orElse(""));
-        model.addAttribute("appliedStudyForm", studyFormId.map(String::valueOf).orElse(""));
-        model.addAttribute("appliedFoundation", foundationId.map(String::valueOf).orElse(""));
-        model.addAttribute("appliedCourse", course.map(String::valueOf).orElse(""));
-        model.addAttribute("appliedSortColumn", sortColumn != null ? sortColumn : "");
-        model.addAttribute("appliedSortDirection", sortDirection != null ? sortDirection : "");
+        // Сохраняем фильтры для формы и pagination URL
+
+        model.addAttribute(
+                "appliedFaculty",
+                facultyId.map(String::valueOf).orElse("")
+        );
+
+        model.addAttribute(
+                "appliedScholarship",
+                scholarshipId.map(String::valueOf).orElse("")
+        );
+
+        model.addAttribute(
+                "appliedStudyForm",
+                studyFormId.map(String::valueOf).orElse("")
+        );
+
+        model.addAttribute(
+                "appliedFoundation",
+                foundationId.map(String::valueOf).orElse("")
+        );
+
+        model.addAttribute(
+                "appliedCourse",
+                course.map(String::valueOf).orElse("")
+        );
+
+        model.addAttribute(
+                "appliedSortColumn",
+                sortColumn != null ? sortColumn : ""
+        );
+
+        model.addAttribute(
+                "appliedSortDirection",
+                sortDirection != null ? sortDirection : ""
+        );
+
+        model.addAttribute("paginationMode", "filter");
 
         return "show/students-show";
     }
@@ -538,16 +684,74 @@ public class StudentController {
      * Истекающие скоро (из главной страницы и вкладок)
      */
     @GetMapping("show/expiring")
-    public String findExpiringStudents(Model model) {
+    public String findExpiringStudents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            Model model) {
+
         LocalDate currentDate = LocalDate.now();
         LocalDate twoWeeksFromNow = currentDate.plusWeeks(2);
 
-        List<Student> students = studentService.findStudentsWithFoundationEndingInWeek(currentDate, twoWeeksFromNow);
+        Specification<Student> spec = (root, query, cb) ->
+                cb.and(
+                        cb.isFalse(root.get("isPermanent")),
+                        cb.isFalse(root.get("isIndefinite")),
+                        cb.isNotNull(root.get("foundationEndDate")),
+                        cb.greaterThan(
+                                root.get("foundationEndDate"),
+                                currentDate
+                        ),
+                        cb.lessThanOrEqualTo(
+                                root.get("foundationEndDate"),
+                                twoWeeksFromNow
+                        )
+                );
 
-        addCommonAttributes(model, "Студенты с истекающим сроком основания");
-        model.addAttribute("students", students);
-        model.addAttribute("pageActiveShow", "nav-link active");
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Student> studentPage =
+                studentService.findAll(spec, pageable);
+
+        addCommonAttributes(
+                model,
+                "Студенты с истекающим сроком основания"
+        );
+
+        model.addAttribute(
+                "students",
+                studentPage.getContent()
+        );
+
+        model.addAttribute(
+                "currentPage",
+                studentPage.getNumber()
+        );
+
+        model.addAttribute(
+                "totalPages",
+                studentPage.getTotalPages()
+        );
+
+        model.addAttribute(
+                "totalStudents",
+                studentPage.getTotalElements()
+        );
+
+        model.addAttribute(
+                "pageSize",
+                studentPage.getSize()
+        );
+
         model.addAttribute("activeTab", "expiring");
+        model.addAttribute("pageActiveShow", "nav-link active");
+
+        /*
+         * Для HTML пагинации сообщаем, что сейчас
+         * используется специальная вкладка.
+         */
+        model.addAttribute("paginationMode", "expiring");
+
+        clearFilterAttributes(model);
 
         return "show/students-show";
     }
@@ -556,15 +760,65 @@ public class StudentController {
      * Архив - истекшие (из главной страницы и вкладок)
      */
     @GetMapping("show/archived")
-    public String findArchivedStudents(Model model) {
+    public String findArchivedStudents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            Model model) {
+
         LocalDate currentDate = LocalDate.now();
 
-        List<Student> students = studentService.findStudentsByFoundationEndDateBeforeOrEqual(currentDate);
+        Specification<Student> spec = (root, query, cb) ->
+                cb.and(
+                        cb.isFalse(root.get("isPermanent")),
+                        cb.isFalse(root.get("isIndefinite")),
+                        cb.isNotNull(root.get("foundationEndDate")),
+                        cb.lessThanOrEqualTo(
+                                root.get("foundationEndDate"),
+                                currentDate
+                        )
+                );
 
-        addCommonAttributes(model, "Архив - студенты с истекшим сроком основания");
-        model.addAttribute("students", students);
-        model.addAttribute("pageActiveShow", "nav-link active");
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Student> studentPage =
+                studentService.findAll(spec, pageable);
+
+        addCommonAttributes(
+                model,
+                "Архив — студенты с истекшим сроком основания"
+        );
+
+        model.addAttribute(
+                "students",
+                studentPage.getContent()
+        );
+
+        model.addAttribute(
+                "currentPage",
+                studentPage.getNumber()
+        );
+
+        model.addAttribute(
+                "totalPages",
+                studentPage.getTotalPages()
+        );
+
+        model.addAttribute(
+                "totalStudents",
+                studentPage.getTotalElements()
+        );
+
+        model.addAttribute(
+                "pageSize",
+                studentPage.getSize()
+        );
+
         model.addAttribute("activeTab", "archived");
+        model.addAttribute("pageActiveShow", "nav-link active");
+
+        model.addAttribute("paginationMode", "archived");
+
+        clearFilterAttributes(model);
 
         return "show/students-show";
     }

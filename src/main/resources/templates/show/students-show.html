@@ -247,7 +247,7 @@
             Удалить выбранных
         </button>
         <span class="ms-auto text-muted">
-            Всего: <strong th:text="${students.size()}">0</strong>
+            Всего: <strong th:text="${totalStudents}">0</strong>
         </span>
     </div>
 
@@ -359,6 +359,133 @@
             </tr>
             </tbody>
         </table>
+        <!-- ПАГИНАЦИЯ -->
+        <nav th:if="${totalPages != null && totalPages > 1}"
+             class="mt-4"
+             aria-label="Навигация по страницам">
+
+            <ul class="pagination justify-content-center">
+
+                <!-- ==================== НАЗАД ==================== -->
+                <li class="page-item"
+                    th:classappend="${currentPage == 0} ? 'disabled'">
+
+                    <!-- Обычный список -->
+                    <a th:if="${paginationMode == 'all'}"
+                       class="page-link"
+                       th:href="@{/students/show(
+                    page=${currentPage - 1},
+                    size=${pageSize}
+               )}">
+                        Назад
+                    </a>
+
+                    <!-- Фильтрация -->
+                    <a th:if="${paginationMode == 'filter'}"
+                       class="page-link"
+                       th:href="@{/students/show/filter(
+                    page=${currentPage - 1},
+                    size=${pageSize},
+                    faculty=${appliedFaculty},
+                    scholarship=${appliedScholarship},
+                    studyForm=${appliedStudyForm},
+                    foundation=${appliedFoundation},
+                    course=${appliedCourse},
+                    sortColumn=${appliedSortColumn},
+                    sortDirection=${appliedSortDirection}
+               )}">
+                        Назад
+                    </a>
+
+                    <!-- Истекающие -->
+                    <a th:if="${paginationMode == 'expiring'}"
+                       class="page-link"
+                       th:href="@{/students/show/expiring(
+                    page=${currentPage - 1},
+                    size=${pageSize}
+               )}">
+                        Назад
+                    </a>
+
+                    <!-- Архив -->
+                    <a th:if="${paginationMode == 'archived'}"
+                       class="page-link"
+                       th:href="@{/students/show/archived(
+                    page=${currentPage - 1},
+                    size=${pageSize}
+               )}">
+                        Назад
+                    </a>
+
+                </li>
+
+
+                <!-- ==================== ТЕКУЩАЯ СТРАНИЦА ==================== -->
+                <li class="page-item disabled">
+            <span class="page-link">
+                Страница
+                <span th:text="${currentPage + 1}">1</span>
+                из
+                <span th:text="${totalPages}">1</span>
+            </span>
+                </li>
+
+
+                <!-- ==================== ВПЕРЁД ==================== -->
+                <li class="page-item"
+                    th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
+
+                    <!-- Обычный список -->
+                    <a th:if="${paginationMode == 'all'}"
+                       class="page-link"
+                       th:href="@{/students/show(
+                    page=${currentPage + 1},
+                    size=${pageSize}
+               )}">
+                        Вперёд
+                    </a>
+
+                    <!-- Фильтрация -->
+                    <a th:if="${paginationMode == 'filter'}"
+                       class="page-link"
+                       th:href="@{/students/show/filter(
+                    page=${currentPage + 1},
+                    size=${pageSize},
+                    faculty=${appliedFaculty},
+                    scholarship=${appliedScholarship},
+                    studyForm=${appliedStudyForm},
+                    foundation=${appliedFoundation},
+                    course=${appliedCourse},
+                    sortColumn=${appliedSortColumn},
+                    sortDirection=${appliedSortDirection}
+               )}">
+                        Вперёд
+                    </a>
+
+                    <!-- Истекающие -->
+                    <a th:if="${paginationMode == 'expiring'}"
+                       class="page-link"
+                       th:href="@{/students/show/expiring(
+                    page=${currentPage + 1},
+                    size=${pageSize}
+               )}">
+                        Вперёд
+                    </a>
+
+                    <!-- Архив -->
+                    <a th:if="${paginationMode == 'archived'}"
+                       class="page-link"
+                       th:href="@{/students/show/archived(
+                    page=${currentPage + 1},
+                    size=${pageSize}
+               )}">
+                        Вперёд
+                    </a>
+
+                </li>
+
+            </ul>
+        </nav>
     </div>
 
 </div>
