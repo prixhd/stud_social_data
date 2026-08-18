@@ -7,7 +7,6 @@ import com.example.studdata.util.ApplicationMetrics;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -28,17 +27,14 @@ public class StudentServiceImpl implements StudentService {
     private final ScholarshipOrderRepository scholarshipOrderRepository;
     private final ApplicationMetrics applicationMetrics;
 
-    @Autowired
-    private FacultyRepository facultyRepository;
+    private final FacultyRepository facultyRepository;
 
-    @Autowired
-    private ScholarshipRepository scholarshipRepository;
+    private final ScholarshipRepository scholarshipRepository;
 
-    @Autowired
-    private FoundationRepository foundationRepository;
+    private final FoundationRepository foundationRepository;
 
-    @Autowired
-    private StudyFormRepository studyFormRepository;
+    private final StudyFormRepository studyFormRepository;
+
 
     @Override
     public List<Faculty> findAllFaculties() {
@@ -127,12 +123,16 @@ public class StudentServiceImpl implements StudentService {
             applicationMetrics.incrementStudentCreatedCounter();
 
             log.info(
-                    "Студент сохранен с ID: {} и создан первичный приказ",
+                    "Новый студент сохранен с ID: {}",
                     savedStudent.getId()
             );
         } else {
             applicationMetrics.incrementStudentUpdatedCounter();
-            log.info("Студент обновлен: {}", savedStudent.getId());
+
+            log.info(
+                    "Студент обновлен: {}",
+                    savedStudent.getId()
+            );
         }
 
         return savedStudent;
