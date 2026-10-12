@@ -140,12 +140,14 @@ util
 - Hibernate
 - Bean Validation
 
+
 ### Database
 
 - MySQL
 - Flyway
 - SQL
 - database indexes and constraints
+- Redis
 
 ### Frontend
 
