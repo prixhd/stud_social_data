@@ -30,6 +30,18 @@ spring:
   application:
     name: studData
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 30m
+      cache-null-values: false
+
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/studdata?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}

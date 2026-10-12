@@ -7,6 +7,7 @@ import com.example.studdata.util.ApplicationMetrics;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -37,22 +38,34 @@ public class StudentServiceImpl implements StudentService {
 
 
     @Override
+    @Cacheable(value = "faculties")
+    @Transactional(readOnly = true)
     public List<Faculty> findAllFaculties() {
+        log.info("CACHE MISS: загрузка факультетов из MySQL");
         return facultyRepository.findAll();
     }
 
     @Override
+    @Cacheable(value = "scholarships")
+    @Transactional(readOnly = true)
     public List<Scholarship> findAllScholarships() {
+        log.info("CACHE MISS: загрузка стипендий из MySQL");
         return scholarshipRepository.findAll();
     }
 
     @Override
+    @Cacheable(value = "foundations")
+    @Transactional(readOnly = true)
     public List<Foundation> findAllFoundations() {
+        log.info("CACHE MISS: загрузка оснований из MySQL");
         return foundationRepository.findAll();
     }
 
     @Override
+    @Cacheable(value = "studyForms")
+    @Transactional(readOnly = true)
     public List<StudyForm> findAllStudyForms() {
+        log.info("CACHE MISS: загрузка форм обучения из MySQL");
         return studyFormRepository.findAll();
     }
 
